@@ -39,6 +39,18 @@ public class Controller {
         return list;
     }
 
+    public List<Devices> getUsersDevices(Users user){
+        Session session = sf.openSession();
+        Query<Devices> devices = session.createQuery("from Devices d where d.usersByIdUd.id = :id");
+        devices.setParameter("id", user.getIdU());
+
+        List<Devices> list = devices.list();
+
+        session.close();
+
+        return list;
+    }
+
     public int createItem(Items item, Users user){
         Session session = sf.openSession();
         Transaction tx = null;
@@ -96,6 +108,7 @@ public class Controller {
 
             Session session = sf.openSession();
             Transaction tx = session.beginTransaction();
+            item.setSaltI("");
 
             try(session){
                 session.delete(item);

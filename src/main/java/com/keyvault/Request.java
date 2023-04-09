@@ -9,6 +9,7 @@ public class Request implements Serializable {
     @Serial
     private static final long serialVersionUID = 6529685098267757621L;
     public static String GET = "GET";
+    public static String GET_DEVICES = "GET-DEVICES";
     public static String DELETE = "DELETE";
     public static String DELETE_USER = "DELETE-USER";
     public static String INSERT = "INSERT";

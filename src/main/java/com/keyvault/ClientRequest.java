@@ -128,6 +128,9 @@ public class ClientRequest extends Thread{
                 case "GET" -> {
                     sendResponse(200, controller.getUserItems(user));
                 } // Get items
+                case "GET-DEVICES" -> {
+                    sendResponse(200, controller.getUsersDevices(user));
+                }
                 case "INSERT" -> {
                     sendResponse(controller.createItem((Items) requestObjects[0], user), null);
                 } //Create item
