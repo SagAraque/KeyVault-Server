@@ -1,3 +1,6 @@
 /out/
 /target/
 /target/classes/
+/src/main/resources/META-INF/MANIFEST.MF
+/.idea/artifacts/ServerSide_jar.xml
+/.idea/uiDesigner.xml
