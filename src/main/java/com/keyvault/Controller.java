@@ -9,19 +9,24 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class Controller {
     private final SessionFactory sf;
     private final PasswordController pc;
+    private ExecutorService executor;
+
     public Controller(String p){
         sf = HibernateUtils.getSessionFactory();
         pc = new PasswordController(p);
+        executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
     public List<Items> getUserItems(Users user) throws Exception {
@@ -31,9 +36,23 @@ public class Controller {
 
         List<Items> list = items.list();
 
-        for (Items item : list)
-            item.decrypt(pc);
+        System.out.println(java.time.LocalTime.now() + " Init decrypt");
 
+        for (Items item : list)
+        {
+            executor.submit(() -> {
+                try {
+                    item.decrypt(pc);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        executor.shutdown();
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+        System.out.println(java.time.LocalTime.now() + " decrypted");
         session.close();
 
         return list;
@@ -56,7 +75,6 @@ public class Controller {
         Transaction tx = null;
 
         try (session) {
-            item.setIdUi(user.getIdU());
             item.encrypt(pc);
 
             tx = session.beginTransaction();
