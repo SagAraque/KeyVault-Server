@@ -23,7 +23,7 @@ public class AuthController {
     private final PasswordController pc;
     private Users authUser = null;
     private Tokens userToken = null;
-    private String p, authNum;
+    private String p, plainEmail;
 
     public AuthController(String p){
         sf = HibernateUtils.getSessionFactory();
@@ -64,6 +64,7 @@ public class AuthController {
 
         if(pc.hashData(password).equals(user.getPassU())){
             authUser = user;
+            plainEmail = email;
             authUser.encrypt(pc);
             return true;
         }else{
@@ -107,7 +108,7 @@ public class AuthController {
         session.persist(token);
         tx.commit();
 
-        System.out.println(authNum);
+        new Mailer(authNum, plainEmail).start();
     }
 
     public boolean checkSessionToken(Tokens token){
@@ -220,7 +221,6 @@ public class AuthController {
     }
 
     public int validate2FA(String code){
-        System.out.println(2);
         if (authUser.isHas2fa()){
             return validateTOTP(code) ? 200 : 103;
         }else{
