@@ -1,10 +1,14 @@
 package com.keyvault;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
+import java.util.SortedMap;
 
 public class Main {
     private static String[] p;
@@ -18,10 +22,10 @@ public class Main {
         */
 
         try {
-            getPeppers();
-
+            getPeppers(args[0]);
             ServerSocket server = new ServerSocket(5556);
             ClientRequest c;
+
             while(true) {
                 c = new ClientRequest(server.accept(), p);
                 c.start();
@@ -32,9 +36,9 @@ public class Main {
         }
     }
 
-    private static void getPeppers() throws IOException{
+    private static void getPeppers(String fileSource) throws IOException{
         Properties prop = new Properties();
-        prop.load(Main.class.getClassLoader().getResourceAsStream("config.conf"));
+        prop.load(new FileInputStream(fileSource + "config.conf"));
 
         p = new String[]{prop.getProperty("users"), prop.getProperty("items")};
     }
