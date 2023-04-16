@@ -5,15 +5,15 @@ import com.keyvault.entities.Items;
 import com.keyvault.entities.Tokens;
 import com.keyvault.entities.Users;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 
 public class ClientRequest extends Thread{
     private final Socket client;
     private ObjectOutputStream out;
     private ObjectInputStream in;
+    private BufferedOutputStream bos;
+    private BufferedInputStream bis;
     private String userP, itemP;
     private AuthController authController;
 
@@ -27,8 +27,11 @@ public class ClientRequest extends Thread{
     public void run(){
         try {
             authController = new AuthController(userP);
-            in = new ObjectInputStream(client.getInputStream());
-            out = new ObjectOutputStream(client.getOutputStream());
+            bos = new BufferedOutputStream(client.getOutputStream());
+            out = new ObjectOutputStream(bos);
+            out.flush();
+            bis = new BufferedInputStream(client.getInputStream());
+            in = new ObjectInputStream(bis);
 
             Request request = (Request) in.readObject();
 
@@ -126,6 +129,7 @@ public class ClientRequest extends Thread{
                     sendResponse(operationStatus, user.isHas2fa() ? authController.getQR() : null);
                 }// Manage TOTP
                 case "GET" -> {
+                    System.out.println(java.time.LocalTime.now() + " Get");
                     sendResponse(200, controller.getUserItems(user));
                 } // Get items
                 case "GET-DEVICES" -> {
@@ -167,6 +171,9 @@ public class ClientRequest extends Thread{
             authController.revalidateToken();
             out.writeObject(new Response(code, objects));
             out.flush();
+            out.reset();
+            bos.flush();
+            System.out.println(java.time.LocalTime.now() + " Response sended: " + code);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
