@@ -14,19 +14,20 @@ public class ClientRequest extends Thread{
     private ObjectInputStream in;
     private BufferedOutputStream bos;
     private BufferedInputStream bis;
-    private String userP, itemP;
+    private String userP, itemP, deviceP;
     private AuthController authController;
 
     public ClientRequest(Socket clientSocket, String[] p){
         client = clientSocket;
         userP = p[0];
         itemP = p[1];
+        deviceP = p[2];
     }
 
     @Override
     public void run(){
         try {
-            authController = new AuthController(userP);
+            authController = new AuthController(userP, deviceP);
             bos = new BufferedOutputStream(client.getOutputStream());
             out = new ObjectOutputStream(bos);
             out.flush();
@@ -37,12 +38,12 @@ public class ClientRequest extends Thread{
 
             if(request.getToken() == null){
                 if(request.getContent() != null){
-                    requestHandler(request, new Controller(itemP));
+                    requestHandler(request, new Controller(itemP, deviceP));
                 }else{
                     sendResponse(203, null);
                 }
             }else{
-                requestPrivilegeHandler(request, new Controller(itemP));
+                requestPrivilegeHandler(request, new Controller(itemP, deviceP));
             }
 
 

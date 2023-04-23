@@ -104,7 +104,6 @@ public class Users implements Serializable {
     }
 
     public void decrypt(PasswordController pc) throws Exception {
-        System.out.println(passU);
         passU = pc.decrypt(passU, saltU);
     }
 
