@@ -8,12 +8,12 @@ import de.taimos.totp.TOTP;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.hibernate.*;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,12 +23,13 @@ public class AuthController {
     private final PasswordController pc;
     private Users authUser = null;
     private Tokens userToken = null;
-    private String p, plainEmail;
+    private String usersPepper, devicesPepper, plainEmail;
 
-    public AuthController(String p){
+    public AuthController(String usersPepper, String devicesPepper){
         sf = HibernateUtils.getSessionFactory();
-        pc = new PasswordController(p);
-        this.p = p;
+        pc = new PasswordController();
+        this.usersPepper = usersPepper;
+        this.devicesPepper = devicesPepper;
     }
 
     public int authenticate(Users loginUser, Devices loginDevice){
@@ -59,12 +60,16 @@ public class AuthController {
 
         session.close();
 
+        pc.setToken(usersPepper);
+
         Users user = userList.get(0);
-        user.decrypt(new PasswordController(p));
+        System.out.println("Init check decrypt");
+        user.decrypt(pc);
 
         if(pc.hashData(password).equals(user.getPassU())){
             authUser = user;
             plainEmail = email;
+            System.out.println("Init check encrypt");
             authUser.encrypt(pc);
             return true;
         }else{
@@ -81,11 +86,19 @@ public class AuthController {
         q.setParameter("ip", pc.hashData(ip));
         q.setParameter("mac", pc.hashData(mac));
 
-        List<Devices> device = q.list();
+        Devices device = (Devices) q.uniqueResult();
+
+        if(device != null)
+        {
+            Transaction tx = session.beginTransaction();
+            device.setLastLogin(new Date());
+            session.update(device);
+            tx.commit();
+        }
 
         session.close();
 
-        return !device.isEmpty();
+        return device != null;
     }
 
     public Users getAuthUser(){
@@ -108,7 +121,8 @@ public class AuthController {
         session.persist(token);
         tx.commit();
 
-        new Mailer(authNum, plainEmail).start();
+        ///new Mailer(authNum, plainEmail).start();
+        System.out.println(authNum);
     }
 
     public boolean checkSessionToken(Tokens token){
@@ -259,13 +273,19 @@ public class AuthController {
         Transaction tx = session.beginTransaction();
 
         try(session){
+            pc.setToken(usersPepper);
             user.setEmailU(pc.hashData(user.getEmailU()));
             user.setPassU(pc.hashData(user.getPassU()));
             user.setSaltU(pc.getSalt());
             user.encrypt(pc);
 
+            pc.setToken(devicesPepper);
+
+            device.geolocate();
             device.setIp(pc.hashData(device.getIp()));
             device.setMac(pc.hashData(device.getMac()));
+            device.setLastLogin(new Date());
+            device.encrypt(pc);
 
             Query q = session.createQuery("from Users u where u.emailU = :email and u.stateU = 1");
             q.setParameter("email", user.getEmailU());
@@ -290,5 +310,4 @@ public class AuthController {
             return 202;
         }
     }
-
 }

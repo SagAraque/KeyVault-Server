@@ -9,8 +9,8 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -21,11 +21,14 @@ import java.util.concurrent.TimeUnit;
 public class Controller {
     private final SessionFactory sf;
     private final PasswordController pc;
+    private final String itemsPepper, devicesPepper;
     private ExecutorService executor;
 
-    public Controller(String p){
+    public Controller(String itemsPepper, String devicesPepper){
         sf = HibernateUtils.getSessionFactory();
-        pc = new PasswordController(p);
+        pc = new PasswordController();
+        this.itemsPepper = itemsPepper;
+        this.devicesPepper = devicesPepper;
         executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
@@ -37,6 +40,8 @@ public class Controller {
         List<Items> list = items.list();
 
         System.out.println(java.time.LocalTime.now() + " Init decrypt");
+
+        pc.setToken(itemsPepper);
 
         for (Items item : list)
         {
@@ -58,12 +63,28 @@ public class Controller {
         return list;
     }
 
-    public List<Devices> getUsersDevices(Users user){
+    public List<Devices> getUsersDevices(Users user) throws InterruptedException {
         Session session = sf.openSession();
         Query<Devices> devices = session.createQuery("from Devices d where d.usersByIdUd.id = :id");
         devices.setParameter("id", user.getIdU());
 
         List<Devices> list = devices.list();
+
+        pc.setToken(devicesPepper);
+
+        for (Devices device : list)
+        {
+            executor.submit(() -> {
+                try {
+                    device.decrypt(pc);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        executor.shutdown();
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
         session.close();
 
@@ -75,6 +96,8 @@ public class Controller {
         Transaction tx = null;
 
         try (session) {
+            pc.setToken(itemsPepper);
+
             item.encrypt(pc);
 
             tx = session.beginTransaction();
@@ -100,6 +123,8 @@ public class Controller {
                 Query q = session.createQuery("SELECT i.saltI FROM Items i WHERE i.id = :idI AND i.idUi = :idU");
                 q.setParameter("idI", item.getIdI());
                 q.setParameter("idU", user.getIdU());
+
+                pc.setToken(itemsPepper);
 
                 item.setSaltI((String) q.uniqueResult());
                 item.setModification(new Timestamp(System.currentTimeMillis()));
@@ -147,16 +172,44 @@ public class Controller {
         Transaction tx = null;
 
         try(session){
-            device.setIp(pc.hashData(device.getIp()));
-            device.setMac(pc.hashData(device.getMac()));
-            device.setUsersByIdUd(user);
+            pc.setToken(devicesPepper);
+            String hashIp = pc.hashData(device.getIp());
+            String hashMac = pc.hashData(device.getMac());
+
+            Query query = session.createQuery("From Devices d where d.usersByIdUd.id = :idU and d.ip = :ip and d.mac = :mac");
+            query.setParameter("idU", user.getIdU());
+            query.setParameter("ip", hashIp);
+            query.setParameter("mac", hashMac);
+
+            Devices queryDevice = (Devices) query.uniqueResult();
 
             tx = session.beginTransaction();
 
-            session.persist(device);
+            System.out.println(queryDevice == null);
+
+            if(queryDevice != null)
+            {
+                queryDevice.setLastLogin(new Date());
+                queryDevice.setStateD((byte) 1);
+
+                session.saveOrUpdate(queryDevice);
+            }
+            else
+            {
+                device.setLastLogin(new Date());
+                device.geolocate();
+                device.setIp(hashIp);
+                device.setMac(hashMac);
+                device.setUsersByIdUd(user);
+
+                device.encrypt(pc);
+
+                session.persist(device);
+            }
+
             tx.commit();
 
-        }catch (HibernateException | NoSuchAlgorithmException e){
+        }catch (Exception e){
             if(tx != null) tx.rollback();
         }
     }
