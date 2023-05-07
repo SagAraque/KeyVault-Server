@@ -8,17 +8,14 @@ import com.keyvault.database.models.Tokens;
 import java.io.*;
 import java.net.Socket;
 
-public class ClientRequest extends Thread{
-    private final Socket client;
-    private ObjectOutputStream out;
-    private ObjectInputStream in;
-    private BufferedOutputStream bos;
-    private BufferedInputStream bis;
+
+public class ClientRequestController extends Thread{
     private String userP, itemP, deviceP;
     private AuthController authController;
+    private SecureSocket secureSocket;
 
-    public ClientRequest(Socket clientSocket, String[] p){
-        client = clientSocket;
+    public ClientRequestController(Socket clientSocket, String[] p) throws IOException {
+        secureSocket = new SecureSocket(clientSocket);
         userP = p[0];
         itemP = p[1];
         deviceP = p[2];
@@ -27,14 +24,8 @@ public class ClientRequest extends Thread{
     @Override
     public void run(){
         try {
+            Request request = (Request) secureSocket.readObject();
             authController = new AuthController(userP, deviceP);
-            bos = new BufferedOutputStream(client.getOutputStream());
-            out = new ObjectOutputStream(bos);
-            out.flush();
-            bis = new BufferedInputStream(client.getInputStream());
-            in = new ObjectInputStream(bis);
-
-            Request request = (Request) in.readObject();
 
             if(request != null)
             {
@@ -49,10 +40,7 @@ public class ClientRequest extends Thread{
                 }
             }
 
-
-            in.close();
-            out.close();
-            client.close();
+            secureSocket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -70,7 +58,7 @@ public class ClientRequest extends Thread{
         Devices device = request.getDevice();
 
         if(user != null && device != null){
-            device.setIp(client.getInetAddress().getHostAddress());
+            device.setIp(secureSocket.getHost());
 
             int error;
 
@@ -95,7 +83,7 @@ public class ClientRequest extends Thread{
                     sendResponse(error, null);
 
                     if(error == 102){
-                        String[] code = in.readUTF().trim().split("::");
+                        String[] code = secureSocket.readUTF().trim().split("::");
                         error = authController.validate2FA(code[0]);
 
                         if(error == 200 && code[1].equals("1"))
@@ -175,14 +163,14 @@ public class ClientRequest extends Thread{
 
     private void sendResponse(int code, Object objects){
         try {
+            Response response = new Response(code, objects);
+            secureSocket.writeObject(response);
+
             authController.revalidateToken();
-            out.writeObject(new Response(code, objects));
-            out.flush();
-            out.reset();
-            bos.flush();
-            System.out.println(java.time.LocalTime.now() + " Response sended: " + code);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+
+        } catch (BadPaddingException | IOException | IllegalBlockSizeException |
+                 InvalidKeyException e) {
+            e.printStackTrace();
         }
     }
 }
