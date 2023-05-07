@@ -1,4 +1,4 @@
-package com.keyvault.entities;
+package com.keyvault.database.models;
 
 import com.keyvault.PasswordController;
 import io.ipgeolocation.api.Geolocation;
@@ -17,7 +17,7 @@ public class Devices implements Serializable {
     private static final long serialVersionUID = 6529685098267757691L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "idD", nullable = false)
+    @Column(name = "idd", nullable = false)
     private Integer idD;
     @Basic
     @Column(name = "mac", nullable = false, length = 88)
@@ -33,16 +33,16 @@ public class Devices implements Serializable {
     private String agent;
     @Basic
     @Temporal(TemporalType.DATE)
-    @Column(name = "lastLogin", nullable = false)
+    @Column(name = "lastlogin", nullable = false)
     private Date lastLogin;
     @Basic
-    @Column(name = "stateD", nullable = false)
-    private byte stateD;
+    @Column(name = "stated", nullable = false)
+    private boolean stateD;
     @Basic
-    @Column(name = "saltD", nullable = false, length = 88)
+    @Column(name = "saltd", nullable = false, length = 88)
     private String saltD;
     @ManyToOne
-    @JoinColumn(name = "idUd", referencedColumnName = "idU", nullable = false)
+    @JoinColumn(name = "idud", referencedColumnName = "idu", nullable = false)
     private Users usersByIdUd;
 
     public Integer getIdD() {
@@ -69,11 +69,11 @@ public class Devices implements Serializable {
         this.ip = ip;
     }
 
-    public byte getStateD() {
+    public boolean getStateD() {
         return stateD;
     }
 
-    public void setStateD(byte stateD) {
+    public void setStateD(boolean stateD) {
         this.stateD = stateD;
     }
 

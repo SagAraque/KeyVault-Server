@@ -1,31 +1,33 @@
-package com.keyvault.entities;
+package com.keyvault.database.models;
 
 import com.keyvault.PasswordController;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
-
 @Entity
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Passwords implements Serializable {
     @Serial
     private static final long serialVersionUID = 6529685098267757695L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "idP", nullable = false)
+    @Column(name = "idp", nullable = false)
     private Integer idP;
     @Basic
-    @Column(name = "emailP", nullable = false, length = 210)
+    @Column(name = "emailp", nullable = false, length = 210)
     private String emailP;
     @Basic
-    @Column(name = "PassP", nullable = false, length = 210)
+    @Column(name = "passp", nullable = false, length = 210)
     private String passP;
     @Basic
     @Column(name = "url", nullable = false, length = -1)
     private String url;
     @OneToOne
-    @JoinColumn(name = "idIp", referencedColumnName = "idI", nullable = false)
+    @JoinColumn(name = "idip", referencedColumnName = "idi", nullable = false)
     private Items itemsByIdIp;
 
     public Integer getIdP() {

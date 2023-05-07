@@ -1,18 +1,17 @@
-package com.keyvault.entities;
+package com.keyvault.database.models;
 
 import javax.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Objects;
-
 @Entity
 public class Tokens implements Serializable {
     @Serial
     private static final long serialVersionUID = 6529685098267757692L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "idT", nullable = false)
+    @Column(name = "idt", nullable = false)
     private Integer idT;
     @Basic
     @Column(name = "value", nullable = false, length = 88)
@@ -22,12 +21,12 @@ public class Tokens implements Serializable {
     private Timestamp date;
     @Basic
     @Column(name = "state", nullable = false)
-    private byte state = 1;
+    private boolean state = true;
     @Basic
-    @Column(name = "isAuth", nullable = false)
-    private byte isAuth = 1;
+    @Column(name = "isauth", nullable = false)
+    private boolean isAuth = true;
     @ManyToOne
-    @JoinColumn(name = "idTu", referencedColumnName = "idU", nullable = false, updatable = false)
+    @JoinColumn(name = "idtu", referencedColumnName = "idu", nullable = false, updatable = false)
     private Users usersByIdTu;
 
     public Integer getIdT() {
@@ -54,19 +53,19 @@ public class Tokens implements Serializable {
         this.date = date;
     }
 
-    public byte getState() {
+    public boolean getState() {
         return state;
     }
 
-    public void setState(byte state) {
+    public void setState(boolean state) {
         this.state = state;
     }
 
-    public byte getIsAuth() {
+    public boolean getIsAuth() {
         return isAuth;
     }
 
-    public void setIsAuth(byte isAuth) {
+    public void setIsAuth(boolean isAuth) {
         this.isAuth = isAuth;
     }
 

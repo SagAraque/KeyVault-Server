@@ -1,10 +1,10 @@
-package com.keyvault;
+package com.keyvault.controllers;
 
-import com.keyvault.entities.Devices;
-import com.keyvault.entities.Items;
-import com.keyvault.entities.Tokens;
-import com.keyvault.entities.Users;
-
+import com.keyvault.Request;
+import com.keyvault.SecureSocket;
+import com.keyvault.database.models.Devices;
+import com.keyvault.database.models.Items;
+import com.keyvault.database.models.Tokens;
 import java.io.*;
 import java.net.Socket;
 

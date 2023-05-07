@@ -1,4 +1,4 @@
-package com.keyvault;
+package com.keyvault.controllers;
 
 import javax.mail.*;
 import javax.mail.internet.MimeMessage;
@@ -6,10 +6,10 @@ import javax.mail.internet.InternetAddress;
 import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
-public class Mailer extends Thread{
+public class MailController extends Thread{
     private String email;
     private int authCode;
-    public Mailer(int authCode, String email)
+    public MailController(int authCode, String email)
     {
         this.authCode = authCode;
         this.email = email;

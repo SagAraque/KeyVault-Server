@@ -1,4 +1,4 @@
-package com.keyvault.entities;
+package com.keyvault.database;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;

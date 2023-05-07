@@ -1,6 +1,7 @@
-package com.keyvault.entities;
+package com.keyvault.database.models;
 
 import com.keyvault.PasswordController;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.io.Serial;
@@ -8,18 +9,20 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Entity
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Notes implements Serializable {
     @Serial
     private static final long serialVersionUID = 6529685098267757694L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "idN", nullable = false)
+    @Column(name = "idn", nullable = false)
     private Integer idN;
     @Basic
     @Column(name = "content", nullable = false, length = -1)
     private String content;
     @OneToOne
-    @JoinColumn(name = "idIn", referencedColumnName = "idI", nullable = false)
+    @JoinColumn(name = "idin", referencedColumnName = "idi", nullable = false)
     private Items itemsByIdIn;
 
     public Integer getIdN() {

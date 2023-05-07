@@ -1,9 +1,10 @@
-package com.keyvault;
+package com.keyvault.controllers;
 
-import com.keyvault.entities.Devices;
-import com.keyvault.entities.HibernateUtils;
-import com.keyvault.entities.Tokens;
-import com.keyvault.entities.Users;
+import com.keyvault.PasswordController;
+import com.keyvault.database.models.Devices;
+import com.keyvault.database.HibernateUtils;
+import com.keyvault.database.models.Tokens;
+import com.keyvault.database.models.Users;
 import de.taimos.totp.TOTP;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;

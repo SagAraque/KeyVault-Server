@@ -1,9 +1,7 @@
-package com.keyvault;
+package com.keyvault.controllers;
 
-import com.keyvault.entities.Devices;
-import com.keyvault.entities.HibernateUtils;
-import com.keyvault.entities.Items;
-import com.keyvault.entities.Users;
+import com.keyvault.PasswordController;
+import com.keyvault.database.HibernateUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

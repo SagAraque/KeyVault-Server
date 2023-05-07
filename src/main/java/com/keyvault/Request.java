@@ -1,6 +1,8 @@
 package com.keyvault;
 
-import com.keyvault.entities.Tokens;
+import com.keyvault.database.models.Devices;
+import com.keyvault.database.models.Tokens;
+import com.keyvault.database.models.Users;
 
 import java.io.Serial;
 import java.io.Serializable;

@@ -1,4 +1,4 @@
-package com.keyvault.entities;
+package com.keyvault.database.models;
 
 import com.keyvault.PasswordController;
 

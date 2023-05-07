@@ -1,7 +1,6 @@
-package com.keyvault.entities;
+package com.keyvault.database.models;
 
 import com.keyvault.PasswordController;
-
 import javax.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;
@@ -14,10 +13,10 @@ public class Items implements Serializable {
     private static final long serialVersionUID = 6529685098267757693L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "idI", nullable = false)
+    @Column(name = "idi", nullable = false)
     private Integer idI;
     @Basic
-    @Column(name = "idUi", nullable = false)
+    @Column(name = "idui", nullable = false)
     private Integer idUi;
     @Basic
     @Column(name = "name", nullable = false, length = 88)
@@ -30,12 +29,12 @@ public class Items implements Serializable {
     private Timestamp modification;
     @Basic
     @Column(name = "fav", nullable = false)
-    private byte fav;
+    private boolean fav;
     @Basic
-    @Column(name = "saltI", nullable = false, length = 88)
+    @Column(name = "salti", nullable = false, length = 88)
     private String saltI;
-    @ManyToOne
-    @JoinColumn(name = "idUi", referencedColumnName = "idU", nullable = false, insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idui", referencedColumnName = "idu", nullable = false, insertable = false, updatable = false)
     private Users usersByIdUi;
     @OneToOne(mappedBy = "itemsByIdIn")
     private Notes notesByIdI;
@@ -82,11 +81,11 @@ public class Items implements Serializable {
         this.modification = modification;
     }
 
-    public byte getFav() {
+    public boolean getFav() {
         return fav;
     }
 
-    public void setFav(byte fav) {
+    public void setFav(boolean fav) {
         this.fav = fav;
     }
 
