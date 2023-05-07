@@ -33,73 +33,56 @@ public class AuthController {
         this.devicesPepper = devicesPepper;
     }
 
-    public int authenticate(Users loginUser, Devices loginDevice){
+    public int authenticate(Users loginUser, Devices loginDevice)
+    {
         try {
-            if(!checkUser(loginUser.getEmailU(), loginUser.getPassU()))
+            Session session = sf.openSession();
+            Query q = session.createQuery("Select u, d from Devices d inner join d.usersByIdUd u where u.emailU = :email and u.stateU = true and d.ip = :ip and d.mac = :mac and d.stateD = true");
+            q.setParameter("email", pc.hashData(loginUser.getEmailU()));
+            q.setParameter("ip", pc.hashData(loginDevice.getIp()));
+            q.setParameter("mac", pc.hashData(loginDevice.getMac()));
+
+            Object[] queryResult = (Object[]) q.uniqueResult();
+
+            if(queryResult == null)
                 return 101;
-            if(!checkDevice(loginUser.getEmailU(), loginDevice.getIp(), loginDevice.getMac()))
+
+            Users user = (Users) queryResult[0];
+            Devices device = (Devices) queryResult[1];
+
+            if(user == null)
+                return 101;
+
+            if(device == null)
                 return 102;
 
-            return 200;
+            pc.setToken(usersPepper);
+            user.decrypt(pc);
+
+            if(pc.hashData(loginUser.getPassU()).equals(user.getPassU()))
+            {
+                Transaction tx = session.beginTransaction();
+
+                user.encrypt(pc);
+                authUser = user;
+                plainEmail = loginUser.getEmailU();
+                device.setLastLogin(new Date());
+
+                session.update(device);
+                tx.commit();
+                session.close();
+                return 200;
+            }
+            else
+            {
+                session.close();
+                return 101;
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
             return 202;
         }
-    }
-
-    public boolean checkUser(String email, String password) throws Exception {
-        Session session = sf.openSession();
-
-        Query q = session.createQuery("from Users u where u.emailU = :email and u.stateU = 1");
-
-        q.setParameter("email", pc.hashData(email));
-
-        List<Users> userList = q.list();
-
-        if(userList.isEmpty())
-            return false;
-
-        session.close();
-
-        pc.setToken(usersPepper);
-
-        Users user = userList.get(0);
-        System.out.println("Init check decrypt");
-        user.decrypt(pc);
-
-        if(pc.hashData(password).equals(user.getPassU())){
-            authUser = user;
-            plainEmail = email;
-            System.out.println("Init check encrypt");
-            authUser.encrypt(pc);
-            return true;
-        }else{
-            return false;
-        }
-    }
-
-    public boolean checkDevice(String email, String ip, String mac) throws NoSuchAlgorithmException {
-        Session session = sf.openSession();
-
-        Query q = session.createQuery("from Devices d where d.ip = :ip and d.mac = :mac and d.usersByIdUd.emailU = :email and d.stateD = 1");
-
-        q.setParameter("email", pc.hashData(email));
-        q.setParameter("ip", pc.hashData(ip));
-        q.setParameter("mac", pc.hashData(mac));
-
-        Devices device = (Devices) q.uniqueResult();
-
-        if(device != null)
-        {
-            Transaction tx = session.beginTransaction();
-            device.setLastLogin(new Date());
-            session.update(device);
-            tx.commit();
-        }
-
-        session.close();
-
-        return device != null;
     }
 
     public Users getAuthUser(){
