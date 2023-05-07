@@ -96,9 +96,9 @@ public class AuthController {
         int authNum = new Random().nextInt(100000, 999999);
 
         Tokens token = new Tokens();
-        token.setIsAuth((byte) 0);
+        token.setIsAuth(false);
         token.setDate(new Timestamp(System.currentTimeMillis()));
-        token.setState((byte) 1);
+        token.setState(true);
         token.setUsersByIdTu(authUser);
         token.setValue(String.valueOf(authNum));
 
@@ -111,7 +111,7 @@ public class AuthController {
 
     public boolean checkSessionToken(Tokens token){
         Session session = sf.openSession();
-        Query<Tokens> q = session.createQuery("from Tokens t where t.state = 1 and t.usersByIdTu.idU = :user and t.value = :token");
+        Query<Tokens> q = session.createQuery("from Tokens t where t.state = true and t.usersByIdTu.idU = :user and t.value = :token");
         q.setParameter("user", token.getUsersByIdTu().getIdU());
         q.setParameter("token", token.getValue());
 
@@ -124,7 +124,7 @@ public class AuthController {
                 userToken = serverToken;
             }else{
                 Transaction tx = session.beginTransaction();
-                serverToken.setState((byte) 0);
+                serverToken.setState(false);
                 session.update(serverToken);
                 tx.commit();
             }
@@ -146,7 +146,7 @@ public class AuthController {
             Session session = sf.openSession();
             Transaction tx = session.beginTransaction();
 
-            Query q = session.createQuery("UPDATE FROM Tokens t SET t.state = 0 WHERE t.usersByIdTu.idU = :user AND t.state = 1");
+            Query q = session.createQuery("UPDATE FROM Tokens t SET t.state = false WHERE t.usersByIdTu.idU = :user AND t.state = true ");
             q.setParameter("user", authUser.getIdU());
             q.executeUpdate();
 
@@ -199,7 +199,7 @@ public class AuthController {
 
     private boolean checkAuthNum(String num){
         Session session = sf.openSession();
-        Query q = session.createQuery("FROM Tokens t where t.usersByIdTu.emailU = :user and t.state = 1 and t.isAuth = 0 order by t.date desc");
+        Query q = session.createQuery("FROM Tokens t where t.usersByIdTu.emailU = :user and t.state = true and t.isAuth = false order by t.date desc");
         q.setParameter("user", authUser.getEmailU());
         q.setMaxResults(1);
 
@@ -208,7 +208,7 @@ public class AuthController {
         if(token != null && num.equals(token.getValue())){
             Transaction tx = session.beginTransaction();
 
-            token.setState((byte) 0);
+            token.setState(false);
             session.update(token);
             tx.commit();
 
@@ -271,7 +271,7 @@ public class AuthController {
             device.setLastLogin(new Date());
             device.encrypt(pc);
 
-            Query q = session.createQuery("from Users u where u.emailU = :email and u.stateU = 1");
+            Query q = session.createQuery("from Users u where u.emailU = :email and u.stateU = true");
             q.setParameter("email", user.getEmailU());
 
             if(q.list().isEmpty()){
