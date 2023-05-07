@@ -5,13 +5,11 @@ import com.keyvault.controllers.ClientRequestController;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
 public class Main {
     private static String[] peppers;
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+    public static void main(String[] args){
         /*
         SSLContext context = SSLContext.getInstance("TLS");
         context.init(null, null, null);
@@ -23,10 +21,10 @@ public class Main {
         try {
             getPeppers(args[0]);
             ServerSocket server = new ServerSocket(5556);
-            ClientRequest c;
+            ClientRequestController c;
 
             while(true) {
-                c = new ClientRequest(server.accept(), peppers);
+                c = new ClientRequestController(server.accept(), peppers);
                 c.start();
             }
 
