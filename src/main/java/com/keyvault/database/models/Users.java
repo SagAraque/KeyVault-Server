@@ -1,7 +1,6 @@
 package com.keyvault.database.models;
 
 import com.keyvault.PasswordController;
-
 import javax.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;
@@ -13,23 +12,21 @@ public class Users implements Serializable {
     private static final long serialVersionUID = 6529685098267757690L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "idU", nullable = false)
+    @Column(name = "idu", nullable = false)
     private Integer idU;
     @Basic
-    @Column(name = "emailU", nullable = false, length = 88)
+    @Column(name = "emailu", nullable = false, length = 88)
     private String emailU;
     @Basic
-    @Column(name = "passU", nullable = false, length = 210)
+    @Column(name = "passu", nullable = false, length = 210)
     private String passU;
     @Basic
-    @Column(name = "saltU", nullable = false, length = 88)
+    @Column(name = "saltu", nullable = false, length = 88)
     private String saltU;
     @Basic
     @Column(name = "key2fa", nullable = true, length = 88)
     private String key2Fa;
     @Basic
-    @Column(name = "stateU", nullable = false)
-    private byte stateU = 1;
 
     @Transient
     private boolean has2fa;
@@ -74,11 +71,11 @@ public class Users implements Serializable {
         this.key2Fa = key2Fa;
     }
 
-    public byte getStateU() {
+    public boolean getStateU() {
         return stateU;
     }
 
-    public void setStateU(byte stateU) {
+    public void setStateU(boolean stateU) {
         this.stateU = stateU;
     }
 
