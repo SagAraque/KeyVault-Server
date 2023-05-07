@@ -5,3 +5,10 @@
 /.idea/artifacts/ServerSide_jar.xml
 /.idea/uiDesigner.xml
 target/classes/hibernate.cfg.xml
+target/classes/com/keyvault/Response.class
+target/classes/config.conf
+target/classes/hibernate.cfg.xml
+.idea/ServerSide.iml
+.idea/modules.xml
+.idea/ServerSide.iml
+.idea/ServerSide.iml
