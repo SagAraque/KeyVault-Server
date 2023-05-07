@@ -12,3 +12,4 @@ target/classes/hibernate.cfg.xml
 .idea/modules.xml
 .idea/ServerSide.iml
 .idea/ServerSide.iml
+.idea/libraries/SecureSocket.xml
