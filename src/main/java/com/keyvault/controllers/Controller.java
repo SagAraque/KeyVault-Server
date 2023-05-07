@@ -2,6 +2,9 @@ package com.keyvault.controllers;
 
 import com.keyvault.PasswordController;
 import com.keyvault.database.HibernateUtils;
+import com.keyvault.database.models.Devices;
+import com.keyvault.database.models.Items;
+import com.keyvault.database.models.Users;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -37,8 +40,6 @@ public class Controller {
 
         List<Items> list = items.list();
 
-        System.out.println(java.time.LocalTime.now() + " Init decrypt");
-
         pc.setToken(itemsPepper);
 
         for (Items item : list)
@@ -46,6 +47,7 @@ public class Controller {
             executor.submit(() -> {
                 try {
                     item.decrypt(pc);
+                    item.setUsersByIdUi(null);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -55,7 +57,6 @@ public class Controller {
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
-        System.out.println(java.time.LocalTime.now() + " decrypted");
         session.close();
 
         return list;
@@ -89,7 +90,7 @@ public class Controller {
         return list;
     }
 
-    public int createItem(Items item, Users user){
+    public int createItem(Items item){
         Session session = sf.openSession();
         Transaction tx = null;
 
@@ -188,7 +189,7 @@ public class Controller {
             if(queryDevice != null)
             {
                 queryDevice.setLastLogin(new Date());
-                queryDevice.setStateD((byte) 1);
+                queryDevice.setStateD(true);
 
                 session.saveOrUpdate(queryDevice);
             }
@@ -265,4 +266,10 @@ public class Controller {
             return 202;
         }
     }
+
+    private Devices decryptDevice(Devices device)
+    {
+        return null;
+    }
+
 }

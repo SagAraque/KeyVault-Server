@@ -1,12 +1,16 @@
 package com.keyvault.controllers;
 
 import com.keyvault.Request;
+import com.keyvault.Response;
 import com.keyvault.SecureSocket;
 import com.keyvault.database.models.Devices;
 import com.keyvault.database.models.Items;
 import com.keyvault.database.models.Tokens;
+import com.keyvault.database.models.Users;
+import javax.crypto.*;
 import java.io.*;
 import java.net.Socket;
+import java.security.InvalidKeyException;
 
 
 public class ClientRequestController extends Thread{
@@ -121,7 +125,6 @@ public class ClientRequestController extends Thread{
                     sendResponse(operationStatus, user.isHas2fa() ? authController.getQR() : null);
                 }// Manage TOTP
                 case "GET" -> {
-                    System.out.println(java.time.LocalTime.now() + " Get");
                     sendResponse(200, controller.getUserItems(user));
                 } // Get items
                 case "GET-DEVICES" -> {
@@ -141,7 +144,7 @@ public class ClientRequestController extends Thread{
                 } // Remove all user devices
                 case "DELETE-USER" -> {
                     user.setKey2Fa(null);
-                    user.setStateU((byte) 0);
+                    user.setStateU(false);
 
                     sendResponse(controller.deleteUserAccount(user), null);
                 }
