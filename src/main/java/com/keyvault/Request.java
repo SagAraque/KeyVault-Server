@@ -12,6 +12,7 @@ public class Request implements Serializable {
     private static final long serialVersionUID = 6529685098267757621L;
     public static String GET = "GET";
     public static String GET_DEVICES = "GET-DEVICES";
+
     public static String DELETE = "DELETE";
     public static String DELETE_USER = "DELETE-USER";
     public static String INSERT = "INSERT";
@@ -21,31 +22,34 @@ public class Request implements Serializable {
     public static String REGISTER = "REGISTER";
     public static String CLEAR_DEVICE = "CLEAR-DEVICE";
     public static String TOTP = "TOTP";
-    private final Object[] object;
-    private final String operationCode;
-    private final Tokens token;
     public static String VERIFY_TOTP = "VERIFY-TOTP";
+    private Users user = null;
+    private Devices device = null;
+    private String operationCode = null;
+    private Object content = null;
+    private Tokens token = null;
 
-    public Request(Object[] object, String operationCode, Tokens token){
-        this.object = object;
+    public Request(Object responseContent, String operationCode, Tokens token){
+        this.content = responseContent;
         this.operationCode = operationCode;
         this.token = token;
+    }
+
+    public Request(Users user, Devices device, String operationCode){
+        this.user = user;
+        this.device = device;
+        this.operationCode = operationCode;
     }
 
     public Request(String operationCode, Tokens token){
-        this.object = null;
         this.operationCode = operationCode;
         this.token = token;
     }
 
-    public Request(Object[] object, String operationCode){
-        this.object = object;
-        this.operationCode = operationCode;
-        this.token = null;
-    }
+    public Request(){}
 
-    public Object[] getContent() {
-        return object;
+    public Object getContent() {
+        return content;
     }
 
     public String getOperationCode() {
@@ -53,4 +57,24 @@ public class Request implements Serializable {
     }
 
     public Tokens getToken(){ return token; }
+
+    public Users getUser() {
+        return user;
+    }
+
+    public void setUser(Users user) {
+        this.user = user;
+    }
+
+    public Devices getDevice() {
+        return device;
+    }
+
+    public void setDevice(Devices device) {
+        this.device = device;
+    }
+
+    public void setContent(Object content) {
+        this.content = content;
+    }
 }

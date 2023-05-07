@@ -36,14 +36,17 @@ public class ClientRequest extends Thread{
 
             Request request = (Request) in.readObject();
 
-            if(request.getToken() == null){
-                if(request.getContent() != null){
-                    requestHandler(request, new Controller(itemP, deviceP));
+            if(request != null)
+            {
+                if(request.getToken() == null){
+                    if(request.getUser() != null && request.getDevice() != null){
+                        requestHandler(request, new Controller(itemP, deviceP));
+                    }else{
+                        sendResponse(203, null);
+                    }
                 }else{
-                    sendResponse(203, null);
+                    requestPrivilegeHandler(request, new Controller(itemP, deviceP));
                 }
-            }else{
-                requestPrivilegeHandler(request, new Controller(itemP, deviceP));
             }
 
 
@@ -63,8 +66,8 @@ public class ClientRequest extends Thread{
      * @throws Exception
      */
     private void requestHandler(Request request, Controller controller) throws Exception {
-        Users user = (Users) request.getContent()[0];
-        Devices device = (Devices) request.getContent()[1];
+        Users user = request.getUser();
+        Devices device = request.getDevice();
 
         if(user != null && device != null){
             device.setIp(client.getInetAddress().getHostAddress());
@@ -119,7 +122,7 @@ public class ClientRequest extends Thread{
      */
     private void requestPrivilegeHandler(Request request, Controller controller) throws Exception {
         Tokens token = request.getToken();
-        Object[] requestObjects = request.getContent();
+        Object requestObject = request.getContent();
 
         if(checkToken(token)){
             Users user = authController.getAuthUser();
@@ -137,13 +140,13 @@ public class ClientRequest extends Thread{
                     sendResponse(200, controller.getUsersDevices(user));
                 }
                 case "INSERT" -> {
-                    sendResponse(controller.createItem((Items) requestObjects[0], user), null);
+                    sendResponse(controller.createItem((Items) requestObject), null);
                 } //Create item
                 case "MOD" -> {
-                    sendResponse(controller.modifyItem((Items) requestObjects[0], user), null);
+                    sendResponse(controller.modifyItem((Items) requestObject, user), null);
                 } // Modify item
                 case "DELETE" -> {
-                    sendResponse(controller.deleteItem((Items) requestObjects[0], user), null);
+                    sendResponse(controller.deleteItem((Items) requestObject, user), null);
                 } // Delete item
                 case "CLEAR-DEVICE" -> {
                     sendResponse(controller.clearDevice(user), null);
