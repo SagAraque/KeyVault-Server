@@ -154,6 +154,9 @@ public class ClientRequest extends Thread{
 
                     sendResponse(controller.deleteUserAccount(user), null);
                 }
+                case "VERIFY-TOTP" -> {
+                    sendResponse(authController.verify2FA((String) requestObject), null);
+                }
                 default -> sendResponse(203, null);
             }
         }

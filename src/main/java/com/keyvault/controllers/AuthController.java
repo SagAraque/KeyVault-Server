@@ -15,7 +15,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -116,6 +115,7 @@ public class AuthController {
         q.setParameter("token", token.getValue());
 
         Tokens serverToken = q.uniqueResult();
+
         long diff = System.currentTimeMillis() - token.getDate().getTime();
 
         if(serverToken != null){
@@ -219,11 +219,16 @@ public class AuthController {
     }
 
     public int validate2FA(String code){
-        if (authUser.isHas2fa()){
+        if (authUser.isHas2fa() && authUser.isTotpverified()){
             return validateTOTP(code) ? 200 : 103;
         }else{
-            return checkAuthNum(code) ? 200 : 103;
+            return checkAuthNum(authUser.getIdU() + "-" + code) ? 200 : 103;
         }
+    }
+
+    public int verify2FA(String code)
+    {
+        return validateTOTP(code) ? 200 : 103;
     }
 
     public Users controlTOTP(){

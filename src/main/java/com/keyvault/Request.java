@@ -24,6 +24,7 @@ public class Request implements Serializable {
     private final Object[] object;
     private final String operationCode;
     private final Tokens token;
+    public static String VERIFY_TOTP = "VERIFY-TOTP";
 
     public Request(Object[] object, String operationCode, Tokens token){
         this.object = object;
