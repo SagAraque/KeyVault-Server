@@ -27,6 +27,12 @@ public class Users implements Serializable {
     @Column(name = "key2fa", nullable = true, length = 88)
     private String key2Fa;
     @Basic
+    @Column(name = "stateu", nullable = false)
+    private boolean stateU = true;
+
+    @Basic
+    @Column(name = "totpverified", nullable = false)
+    private boolean totpverified = false;
 
     @Transient
     private boolean has2fa;
@@ -82,6 +88,18 @@ public class Users implements Serializable {
     public boolean isHas2fa() {return has2fa;}
 
     public void setHas2fa(boolean has2fa) {this.has2fa = has2fa;}
+
+    public boolean isStateU() {
+        return stateU;
+    }
+
+    public boolean isTotpverified() {
+        return totpverified;
+    }
+
+    public void setTotpverified(boolean totpverified) {
+        this.totpverified = totpverified;
+    }
 
     @Override
     public boolean equals(Object o) {
