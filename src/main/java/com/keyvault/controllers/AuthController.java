@@ -219,7 +219,7 @@ public class AuthController {
     }
 
     public int validate2FA(String code){
-        if (authUser.isHas2fa() && authUser.isTotpverified()){
+        if (authUser.isTotpverified()){
             return validateTOTP(code) ? 200 : 103;
         }else{
             return checkAuthNum(authUser.getIdU() + "-" + code) ? 200 : 103;
@@ -232,18 +232,18 @@ public class AuthController {
     }
 
     public Users controlTOTP(){
-        if(!authUser.isHas2fa()){
+        if(!authUser.isTotpverified()){
             SecureRandom num = new SecureRandom();
             byte[] bytes = new byte[20];
             num.nextBytes(bytes);
             String key = new Base32().encodeAsString(bytes);
 
             authUser.setKey2Fa(key.replaceAll("=", ""));
-            authUser.setHas2fa(true);
         }else{
             authUser.setKey2Fa(null);
-            authUser.setHas2fa(false);
         }
+
+        authUser.setTotpverified(false);
 
         return authUser;
 

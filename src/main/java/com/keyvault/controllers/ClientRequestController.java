@@ -72,7 +72,7 @@ public class ClientRequestController extends Thread{
                     error = authController.authenticate(user, device);
 
                     if(error == 102)
-                        if(!authController.getAuthUser().isHas2fa())
+                        if(!authController.getAuthUser().isTotpverified())
                             authController.generateAuthCode();
 
                     sendResponse(error, error == 200 ? authController.generateToken() : null);
@@ -122,7 +122,9 @@ public class ClientRequestController extends Thread{
             switch (request.getOperationCode()){
                 case "TOTP" -> {
                     int operationStatus = controller.updateUser(authController.controlTOTP());
-                    sendResponse(operationStatus, user.isHas2fa() ? authController.getQR() : null);
+                    boolean needQR = !user.isTotpverified() && !user.getKey2Fa().equals("");
+
+                    sendResponse(operationStatus, needQR ? authController.getQR() : null);
                 }// Manage TOTP
                 case "GET" -> {
                     sendResponse(200, controller.getUserItems(user));

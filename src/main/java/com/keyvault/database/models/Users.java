@@ -34,9 +34,6 @@ public class Users implements Serializable {
     @Column(name = "totpverified", nullable = false)
     private boolean totpverified = false;
 
-    @Transient
-    private boolean has2fa;
-
     public Integer getIdU() {
         return idU;
     }
@@ -85,10 +82,6 @@ public class Users implements Serializable {
         this.stateU = stateU;
     }
 
-    public boolean isHas2fa() {return has2fa;}
-
-    public void setHas2fa(boolean has2fa) {this.has2fa = has2fa;}
-
     public boolean isStateU() {
         return stateU;
     }
@@ -120,10 +113,5 @@ public class Users implements Serializable {
 
     public void decrypt(PasswordController pc) throws Exception {
         passU = pc.decrypt(passU, saltU);
-    }
-
-    @PostLoad
-    private void postLoad(){
-        has2fa = key2Fa != null;
     }
 }
