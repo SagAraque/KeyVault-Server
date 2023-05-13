@@ -32,8 +32,8 @@ public class Controller {
     }
 
     public List<Items> getUserItems(Users user) throws Exception {
-        Query<Items> items = session.createQuery("from Items i where i.idUi = :id");
         Session session = HibernateUtils.getCurrentSession();
+        Query items = session.createQuery("from Items i where i.idUi = :id").setReadOnly(true);
         items.setParameter("id", user.getIdU());
 
         List<Items> list = items.list();
@@ -61,8 +61,8 @@ public class Controller {
     }
 
     public List<Devices> getUsersDevices(Users user) throws InterruptedException {
-        Query<Devices> devices = session.createQuery("from Devices d where d.usersByIdUd.id = :id");
         Session session = HibernateUtils.getCurrentSession();
+        Query devices = session.createQuery("from Devices d where d.usersByIdUd.id = :id").setReadOnly(true);
         devices.setParameter("id", user.getIdU());
 
         List<Devices> list = devices.list();
