@@ -20,22 +20,20 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Controller {
-    private final SessionFactory sf;
     private final PasswordController pc;
     private final String itemsPepper, devicesPepper;
     private ExecutorService executor;
 
     public Controller(String itemsPepper, String devicesPepper){
-        sf = HibernateUtils.getSessionFactory();
-        pc = new PasswordController();
+        this.pc = new PasswordController();
         this.itemsPepper = itemsPepper;
         this.devicesPepper = devicesPepper;
-        executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
     public List<Items> getUserItems(Users user) throws Exception {
-        Session session = sf.openSession();
         Query<Items> items = session.createQuery("from Items i where i.idUi = :id");
+        Session session = HibernateUtils.getCurrentSession();
         items.setParameter("id", user.getIdU());
 
         List<Items> list = items.list();
@@ -57,14 +55,14 @@ public class Controller {
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
-        session.close();
+        HibernateUtils.closeSession(session);
 
         return list;
     }
 
     public List<Devices> getUsersDevices(Users user) throws InterruptedException {
-        Session session = sf.openSession();
         Query<Devices> devices = session.createQuery("from Devices d where d.usersByIdUd.id = :id");
+        Session session = HibernateUtils.getCurrentSession();
         devices.setParameter("id", user.getIdU());
 
         List<Devices> list = devices.list();
@@ -85,29 +83,32 @@ public class Controller {
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
-        session.close();
+        HibernateUtils.closeSession(session);
 
         return list;
     }
 
     public int createItem(Items item){
-        Session session = sf.openSession();
+        Session session = null;
         Transaction tx = null;
 
-        try (session) {
+        try{
+            session = HibernateUtils.getCurrentSession();
+            tx = session.beginTransaction();
+
             pc.setToken(itemsPepper);
 
             item.encrypt(pc);
-
-            tx = session.beginTransaction();
 
             session.persist(item);
             session.persist(item.getPasswordsByIdI() == null ? item.getNotesByIdI() : item.getPasswordsByIdI());
 
             tx.commit();
-        } catch (Exception e) {
+        }catch (Exception e){
             if(tx != null) tx.rollback();
             return 202;
+        }finally {
+            HibernateUtils.closeSession(session);
         }
 
         return 200;
@@ -115,11 +116,14 @@ public class Controller {
 
     public int modifyItem(Items item, Users user){
         if(Objects.equals(item.getIdUi(), user.getIdU())){
-            Session session = sf.openSession();
+            Session session = null;
             Transaction tx = null;
 
-            try(session){
-                Query q = session.createQuery("SELECT i.saltI FROM Items i WHERE i.id = :idI AND i.idUi = :idU");
+            try{
+                session = HibernateUtils.getCurrentSession();
+                tx = session.beginTransaction();
+
+                Query q = session.createQuery("SELECT i.saltI, i.id FROM Items i WHERE i.id = :idI AND i.idUi = :idU");
                 q.setParameter("idI", item.getIdI());
                 q.setParameter("idU", user.getIdU());
 
@@ -129,13 +133,13 @@ public class Controller {
                 item.setModification(new Timestamp(System.currentTimeMillis()));
                 item.encrypt(pc);
 
-                tx = session.beginTransaction();
-
                 session.update(item);
                 tx.commit();
             }catch (Exception e){
                 if(tx != null) tx.rollback();
                 return 202;
+            }finally {
+                HibernateUtils.closeSession(session);
             }
 
             return 200;
@@ -147,18 +151,22 @@ public class Controller {
 
     public int deleteItem(Items item, Users user){
         if(Objects.equals(item.getIdUi(), user.getIdU())){
-
-            Session session = sf.openSession();
-            Transaction tx = session.beginTransaction();
+            Session session = null;
+            Transaction tx = null;
             item.setSaltI("");
 
-            try(session){
+            try{
+                session = HibernateUtils.getCurrentSession();
+                tx = session.beginTransaction();
+
                 session.delete(item);
                 tx.commit();
                 return 200;
             }catch (HibernateException e){
-                tx.rollback();
+                if(tx != null) tx.rollback();
                 return 202;
+            }finally {
+                HibernateUtils.closeSession(session);
             }
 
         }else{
@@ -167,10 +175,13 @@ public class Controller {
     }
 
     public void addDevice(Devices device, Users user){
-        Session session = sf.openSession();
+        Session session = null;
         Transaction tx = null;
 
-        try(session){
+        try{
+            session = HibernateUtils.getCurrentSession();
+            tx = session.beginTransaction();
+
             pc.setToken(devicesPepper);
             String hashIp = pc.hashData(device.getIp());
             String hashMac = pc.hashData(device.getMac());
@@ -181,10 +192,6 @@ public class Controller {
             query.setParameter("mac", hashMac);
 
             Devices queryDevice = (Devices) query.uniqueResult();
-
-            tx = session.beginTransaction();
-
-            System.out.println(queryDevice == null);
 
             if(queryDevice != null)
             {
@@ -210,14 +217,19 @@ public class Controller {
 
         }catch (Exception e){
             if(tx != null) tx.rollback();
+        }finally {
+            HibernateUtils.closeSession(session);
         }
     }
 
     public int clearDevice(Users user){
-        Session session = sf.openSession();
-        Transaction tx = session.beginTransaction();
+        Session session = null;
+        Transaction tx = null;
 
-        try(session){
+        try{
+            session = HibernateUtils.getCurrentSession();
+            tx = session.beginTransaction();
+
             Query q = session.createQuery("UPDATE Devices d set d.stateD = 0 where d.usersByIdUd.idU = :user");
             q.setParameter("user", user.getIdU());
             q.executeUpdate();
@@ -226,32 +238,41 @@ public class Controller {
 
             return 200;
         }catch (HibernateException e){
-            tx.rollback();
+            if(tx != null) tx.rollback();
             return 202;
+        }finally {
+            HibernateUtils.closeSession(session);
         }
     }
 
     public int updateUser(Users user){
-        Session session = sf.openSession();
-        Transaction tx = session.beginTransaction();
+        Session session = null;
+        Transaction tx = null;
 
-        try(session){
+        try{
+            session = HibernateUtils.getCurrentSession();
+            tx = session.beginTransaction();
+
             session.saveOrUpdate(user);
             tx.commit();
 
             return 200;
 
         }catch (HibernateException e){
-            tx.rollback();
+            if(tx != null) tx.rollback();
             return 202;
+        }finally {
+            HibernateUtils.closeSession(session);
         }
     }
 
     public int deleteUserAccount(Users user){
-        Session session = sf.openSession();
-        Transaction tx = session.beginTransaction();
+        Session session = null;
+        Transaction tx = null;
 
-        try(session){
+        try{
+            session = HibernateUtils.getCurrentSession();
+            tx = session.beginTransaction();
             Query q = session.createQuery("DELETE Items i WHERE i.idUi = :id");
             q.setParameter("id", user.getIdU());
 
@@ -262,14 +283,10 @@ public class Controller {
             return 200;
 
         }catch (HibernateException e){
-            tx.rollback();
+            if(tx != null) tx.rollback();
             return 202;
+        }finally {
+            HibernateUtils.closeSession(session);
         }
     }
-
-    private Devices decryptDevice(Devices device)
-    {
-        return null;
-    }
-
 }

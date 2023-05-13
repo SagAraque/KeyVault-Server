@@ -19,14 +19,13 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class AuthController {
-    private final SessionFactory sf;
     private final PasswordController pc;
     private Users authUser = null;
     private Tokens userToken = null;
-    private String usersPepper, devicesPepper, plainEmail;
+    private String usersPepper;
+    private String devicesPepper;
 
     public AuthController(String usersPepper, String devicesPepper){
-        sf = HibernateUtils.getSessionFactory();
         pc = new PasswordController();
         this.usersPepper = usersPepper;
         this.devicesPepper = devicesPepper;
@@ -34,8 +33,10 @@ public class AuthController {
 
     public int authenticate(Users loginUser, Devices loginDevice)
     {
+        Session session = null;
+
         try {
-            Session session = sf.openSession();
+            session = HibernateUtils.getCurrentSession();
             Query q = session.createQuery("Select u, d from Devices d inner join d.usersByIdUd u where u.emailU = :email and u.stateU = true and d.ip = :ip and d.mac = :mac and d.stateD = true");
             q.setParameter("email", pc.hashData(loginUser.getEmailU()));
             q.setParameter("ip", pc.hashData(loginDevice.getIp()));
@@ -64,7 +65,7 @@ public class AuthController {
 
                 user.encrypt(pc);
                 authUser = user;
-                plainEmail = loginUser.getEmailU();
+                String plainEmail = loginUser.getEmailU();
                 device.setLastLogin(new Date());
 
                 session.update(device);
@@ -81,6 +82,8 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return 202;
+        }finally {
+            HibernateUtils.closeSession(session);
         }
     }
 
@@ -89,7 +92,7 @@ public class AuthController {
     }
 
     public void generateAuthCode(){
-        Session session = sf.openSession();
+        Session session = HibernateUtils.getCurrentSession();
         Transaction tx = session.beginTransaction();
 
         int authNum = new Random().nextInt(100000, 999999);
@@ -104,12 +107,14 @@ public class AuthController {
         session.persist(token);
         tx.commit();
 
+        HibernateUtils.closeSession(session);
+
         ///new Mailer(authNum, plainEmail).start();
         System.out.println(authNum);
     }
 
     public boolean checkSessionToken(Tokens token){
-        Session session = sf.openSession();
+        Session session = HibernateUtils.getCurrentSession();
         Query<Tokens> q = session.createQuery("from Tokens t where t.state = true and t.usersByIdTu.idU = :user and t.value = :token");
         q.setParameter("user", token.getUsersByIdTu().getIdU());
         q.setParameter("token", token.getValue());
@@ -130,11 +135,12 @@ public class AuthController {
             }
         }
 
-        session.close();
+        HibernateUtils.closeSession(session);
         return serverToken != null && diff < 600000;
     }
 
     public Tokens generateToken(){
+        Session session = HibernateUtils.getCurrentSession();
 
         try {
             Random random = ThreadLocalRandom.current();
@@ -143,7 +149,7 @@ public class AuthController {
 
             String token = pc.hashData(authUser.getIdU() + System.currentTimeMillis() + new String(bytes));
 
-            Session session = sf.openSession();
+
             Transaction tx = session.beginTransaction();
 
             Query q = session.createQuery("UPDATE FROM Tokens t SET t.state = false WHERE t.usersByIdTu.idU = :user AND t.state = true ");
@@ -164,12 +170,14 @@ public class AuthController {
             return newToken;
         } catch (NoSuchAlgorithmException e) {
             return null;
+        }finally {
+            HibernateUtils.closeSession(session);
         }
     }
 
     public Tokens revalidateToken(){
         if(userToken != null){
-            Session session = sf.openSession();
+            Session session = HibernateUtils.getCurrentSession();
             Transaction tx = session.beginTransaction();
             session.refresh(authUser);
 
@@ -178,6 +186,8 @@ public class AuthController {
 
             session.saveOrUpdate(userToken);
             tx.commit();
+
+            HibernateUtils.closeSession(session);
         }
 
         return userToken;
@@ -198,7 +208,7 @@ public class AuthController {
     }
 
     private boolean checkAuthNum(String num){
-        Session session = sf.openSession();
+        Session session = HibernateUtils.getCurrentSession();
         Query q = session.createQuery("FROM Tokens t where t.usersByIdTu.emailU = :user and t.state = true and t.isAuth = false order by t.date desc");
         q.setParameter("user", authUser.getEmailU());
         q.setMaxResults(1);
@@ -212,8 +222,11 @@ public class AuthController {
             session.update(token);
             tx.commit();
 
+            HibernateUtils.closeSession(session);
+
             return true;
         }else{
+            HibernateUtils.closeSession(session);
             return false;
         }
     }
@@ -228,7 +241,21 @@ public class AuthController {
 
     public int verify2FA(String code)
     {
-        return validateTOTP(code) ? 200 : 103;
+        boolean isValid = validateTOTP(code);
+
+        if(isValid)
+        {
+            Session session = HibernateUtils.getCurrentSession();
+            Transaction tx = session.beginTransaction();
+            authUser.setTotpverified(true);
+
+            session.saveOrUpdate(authUser);
+            tx.commit();
+
+            HibernateUtils.closeSession(session);
+        }
+
+        return isValid ? 200 : 103;
     }
 
     public Users controlTOTP(){
@@ -258,10 +285,13 @@ public class AuthController {
     }
 
     public int createUser(Users user, Devices device){
-        Session session = sf.openSession();
-        Transaction tx = session.beginTransaction();
+        Session session = null;
+        Transaction tx = null;
 
-        try(session){
+        try{
+            session = HibernateUtils.getCurrentSession();
+            tx = session.beginTransaction();
+
             pc.setToken(usersPepper);
             user.setEmailU(pc.hashData(user.getEmailU()));
             user.setPassU(pc.hashData(user.getPassU()));
@@ -295,8 +325,10 @@ public class AuthController {
             return 104;
 
         } catch (Exception e){
-            tx.rollback();
+            if(tx != null) tx.rollback();
             return 202;
+        }finally {
+            HibernateUtils.closeSession(session);
         }
     }
 }
