@@ -20,3 +20,4 @@ target/classes/hibernate.cfg.xml
 .idea/jarRepositories.xml
 .idea/encodings.xml
 .idea/compiler.xml
+.idea/libraries/Hibernate_5_4_11_5_4_11.xml
