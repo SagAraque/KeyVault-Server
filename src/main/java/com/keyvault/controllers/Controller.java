@@ -7,71 +7,81 @@ import com.keyvault.database.models.Items;
 import com.keyvault.database.models.Users;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
+import javax.crypto.NoSuchPaddingException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 
 public class Controller {
     private final PasswordController pc;
     private final String itemsPepper, devicesPepper;
-    private ExecutorService executor;
 
-    public Controller(String itemsPepper, String devicesPepper){
+    public Controller(String itemsPepper, String devicesPepper) throws NoSuchPaddingException, NoSuchAlgorithmException {
         this.pc = new PasswordController();
         this.itemsPepper = itemsPepper;
         this.devicesPepper = devicesPepper;
-        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
-    public List<Items> getUserItems(Users user) throws Exception {
-        Session session = HibernateUtils.getCurrentSession();
-        Query items = session.createQuery("from Items i where i.idUi = :id").setReadOnly(true);
-        items.setParameter("id", user.getIdU());
+    public List<Items> getUserItems(Users user){
+        Session session = null;
+        List<Items> list = new ArrayList<>();
 
-        List<Items> list = items.list();
-
-        pc.setToken(itemsPepper);
-
-        for (Items item : list)
+        try
         {
-            executor.submit(() -> {
+            session = HibernateUtils.getCurrentSession();
+
+            Query items = session.createQuery("select i from Items i join i.usersByIdUi u where u.idU = :id").setReadOnly(true);
+            items.setParameter("id", user.getIdU());
+
+            list = items.list();
+
+            pc.setToken(itemsPepper);
+
+            list.parallelStream().forEach(item -> {
+                item.setUsersByIdUi(null);
+
                 try {
                     item.decrypt(pc);
-                    item.setUsersByIdUi(null);
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
             });
+
         }
+        catch (Exception ignored)
+        {
 
-        executor.shutdown();
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-
-        HibernateUtils.closeSession(session);
+        }
+        finally
+        {
+            HibernateUtils.closeSession(session);
+        }
 
         return list;
     }
 
-    public List<Devices> getUsersDevices(Users user) throws InterruptedException {
-        Session session = HibernateUtils.getCurrentSession();
-        Query devices = session.createQuery("from Devices d where d.usersByIdUd.id = :id").setReadOnly(true);
-        devices.setParameter("id", user.getIdU());
+    public List<Devices> getUsersDevices(Users user) {
+        Session session = null;
+        List<Devices> list = new ArrayList<>();
 
-        List<Devices> list = devices.list();
-
-        pc.setToken(devicesPepper);
-
-        for (Devices device : list)
+        try
         {
-            executor.submit(() -> {
+            session = HibernateUtils.getCurrentSession();
+
+            Query devices = session.createQuery("select d from Devices d join d.usersByIdUd u where u.idU = :id").setReadOnly(true);
+            devices.setParameter("id", user.getIdU());
+
+            list = devices.list();
+
+            pc.setToken(devicesPepper);
+
+            list.parallelStream().forEach(device -> {
                 try {
                     device.decrypt(pc);
                 } catch (Exception e) {
@@ -79,11 +89,14 @@ public class Controller {
                 }
             });
         }
+        catch (Exception ignored)
+        {
 
-        executor.shutdown();
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-
-        HibernateUtils.closeSession(session);
+        }
+        finally
+        {
+            HibernateUtils.closeSession(session);
+        }
 
         return list;
     }
@@ -123,7 +136,7 @@ public class Controller {
                 session = HibernateUtils.getCurrentSession();
                 tx = session.beginTransaction();
 
-                Query q = session.createQuery("SELECT i.saltI, i.id FROM Items i WHERE i.id = :idI AND i.idUi = :idU");
+                Query q = session.createQuery("SELECT i.saltI FROM Items i WHERE i.id = :idI AND i.idUi = :idU");
                 q.setParameter("idI", item.getIdI());
                 q.setParameter("idU", user.getIdU());
 
@@ -273,17 +286,18 @@ public class Controller {
         try{
             session = HibernateUtils.getCurrentSession();
             tx = session.beginTransaction();
-            Query q = session.createQuery("DELETE Items i WHERE i.idUi = :id");
-            q.setParameter("id", user.getIdU());
+            Query query = session.createQuery("DELETE Items i WHERE i.idUi = :id");
+            query.setParameter("id", user.getIdU());
 
-            q.executeUpdate();
+            query.executeUpdate();
             session.saveOrUpdate(user);
             tx.commit();
 
             return 200;
 
         }catch (HibernateException e){
-            if(tx != null) tx.rollback();
+            if(tx != null)
+                tx.rollback();
             return 202;
         }finally {
             HibernateUtils.closeSession(session);
