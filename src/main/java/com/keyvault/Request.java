@@ -1,7 +1,7 @@
 package com.keyvault;
 
 import com.keyvault.database.models.Devices;
-import com.keyvault.database.models.Tokens;
+import com.keyvault.database.models.SessionToken;
 import com.keyvault.database.models.Users;
 
 import java.io.Serial;
@@ -27,9 +27,9 @@ public class Request implements Serializable {
     private Devices device = null;
     private String operationCode = null;
     private Object content = null;
-    private Tokens token = null;
+    private SessionToken token = null;
 
-    public Request(Object responseContent, String operationCode, Tokens token){
+    public Request(Object responseContent, String operationCode, SessionToken token){
         this.content = responseContent;
         this.operationCode = operationCode;
         this.token = token;
@@ -41,7 +41,7 @@ public class Request implements Serializable {
         this.operationCode = operationCode;
     }
 
-    public Request(String operationCode, Tokens token){
+    public Request(String operationCode, SessionToken token){
         this.operationCode = operationCode;
         this.token = token;
     }
@@ -56,7 +56,7 @@ public class Request implements Serializable {
         return operationCode;
     }
 
-    public Tokens getToken(){ return token; }
+    public SessionToken getToken(){ return token; }
 
     public Users getUser() {
         return user;

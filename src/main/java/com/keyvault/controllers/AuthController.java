@@ -3,32 +3,33 @@ package com.keyvault.controllers;
 import com.keyvault.PasswordController;
 import com.keyvault.database.models.Devices;
 import com.keyvault.database.HibernateUtils;
-import com.keyvault.database.models.Tokens;
+import com.keyvault.database.models.SessionToken;
 import com.keyvault.database.models.Users;
 import de.taimos.totp.TOTP;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.hibernate.*;
+
+import javax.crypto.NoSuchPaddingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.sql.Timestamp;
 import java.util.Date;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class AuthController {
     private final PasswordController pc;
     private Users authUser = null;
-    private Tokens userToken = null;
+    private SessionToken userToken = null;
     private String usersPepper;
     private String devicesPepper;
+    private RedisTokensController tokensController;
 
-    public AuthController(String usersPepper, String devicesPepper){
+    public AuthController(String usersPepper, String devicesPepper, String redisPassword) throws NoSuchPaddingException, NoSuchAlgorithmException {
         pc = new PasswordController();
         this.usersPepper = usersPepper;
         this.devicesPepper = devicesPepper;
+        this.tokensController = new RedisTokensController(redisPassword);
     }
 
     public int authenticate(Users loginUser, Devices loginDevice)
@@ -91,109 +92,6 @@ public class AuthController {
         return authUser;
     }
 
-    public void generateAuthCode(){
-        Session session = HibernateUtils.getCurrentSession();
-        Transaction tx = session.beginTransaction();
-
-        int authNum = new Random().nextInt(100000, 999999);
-
-        Tokens token = new Tokens();
-        token.setIsAuth(false);
-        token.setDate(new Timestamp(System.currentTimeMillis()));
-        token.setState(true);
-        token.setUsersByIdTu(authUser);
-        token.setValue(String.valueOf(authNum));
-
-        session.persist(token);
-        tx.commit();
-
-        HibernateUtils.closeSession(session);
-
-        ///new Mailer(authNum, plainEmail).start();
-        System.out.println(authNum);
-    }
-
-    public boolean checkSessionToken(Tokens token){
-        Session session = HibernateUtils.getCurrentSession();
-        Query<Tokens> q = session.createQuery("from Tokens t where t.state = true and t.usersByIdTu.idU = :user and t.value = :token");
-        q.setParameter("user", token.getUsersByIdTu().getIdU());
-        q.setParameter("token", token.getValue());
-
-        Tokens serverToken = q.uniqueResult();
-
-        long diff = System.currentTimeMillis() - token.getDate().getTime();
-
-        if(serverToken != null){
-            if(diff < 600000){
-                authUser = serverToken.getUsersByIdTu();
-                userToken = serverToken;
-            }else{
-                Transaction tx = session.beginTransaction();
-                serverToken.setState(false);
-                session.update(serverToken);
-                tx.commit();
-            }
-        }
-
-        HibernateUtils.closeSession(session);
-        return serverToken != null && diff < 600000;
-    }
-
-    public Tokens generateToken(){
-        Session session = HibernateUtils.getCurrentSession();
-
-        try {
-            Random random = ThreadLocalRandom.current();
-            byte[] bytes = new byte[64];
-            random.nextBytes(bytes);
-
-            String token = pc.hashData(authUser.getIdU() + System.currentTimeMillis() + new String(bytes));
-
-
-            Transaction tx = session.beginTransaction();
-
-            Query q = session.createQuery("UPDATE FROM Tokens t SET t.state = false WHERE t.usersByIdTu.idU = :user AND t.state = true ");
-            q.setParameter("user", authUser.getIdU());
-            q.executeUpdate();
-
-            Tokens newToken = new Tokens();
-            newToken.setUsersByIdTu(authUser);
-            newToken.setValue(token);
-            newToken.setDate(new Timestamp(System.currentTimeMillis()));
-
-            session.persist(newToken);
-
-            tx.commit();
-
-            userToken = newToken;
-
-            return newToken;
-        } catch (NoSuchAlgorithmException e) {
-            return null;
-        }finally {
-            HibernateUtils.closeSession(session);
-        }
-    }
-
-    public Tokens revalidateToken(){
-        if(userToken != null){
-            Session session = HibernateUtils.getCurrentSession();
-            Transaction tx = session.beginTransaction();
-            session.refresh(authUser);
-
-            userToken.setDate(new Timestamp(System.currentTimeMillis()));
-            userToken.setUsersByIdTu(authUser);
-
-            session.saveOrUpdate(userToken);
-            tx.commit();
-
-            HibernateUtils.closeSession(session);
-        }
-
-        return userToken;
-
-    }
-
     private boolean validateTOTP(String code){
         try {
             byte[] bytes = new Base32().decode(authUser.getKey2Fa());
@@ -207,36 +105,36 @@ public class AuthController {
         }
     }
 
-    private boolean checkAuthNum(String num){
-        Session session = HibernateUtils.getCurrentSession();
-        Query q = session.createQuery("FROM Tokens t where t.usersByIdTu.emailU = :user and t.state = true and t.isAuth = false order by t.date desc");
-        q.setParameter("user", authUser.getEmailU());
-        q.setMaxResults(1);
-
-        Tokens token = (Tokens) q.uniqueResult();
-
-        if(token != null && num.equals(token.getValue())){
-            Transaction tx = session.beginTransaction();
-
-            token.setState(false);
-            session.update(token);
-            tx.commit();
-
-            HibernateUtils.closeSession(session);
-
-            return true;
-        }else{
-            HibernateUtils.closeSession(session);
-            return false;
-        }
-    }
-
     public int validate2FA(String code){
         if (authUser.isTotpverified()){
             return validateTOTP(code) ? 200 : 103;
         }else{
-            return checkAuthNum(authUser.getIdU() + "-" + code) ? 200 : 103;
+            return tokensController.validateVerifyToken(code, authUser) ? 200 : 103;
         }
+    }
+
+    public void generateVerifyToken()
+    {
+        tokensController.generateVerifyToken(authUser);
+    }
+
+    public boolean checkSessionToken(SessionToken token)
+    {
+       boolean isAuth = tokensController.checkSessionToken(token);
+
+       if(isAuth)
+           userToken = token;
+
+       return isAuth;
+    }
+
+    public void revalidateToken()
+    {
+        tokensController.revalidateToken(userToken);
+    }
+
+    public SessionToken generateToken() throws NoSuchAlgorithmException, NoSuchPaddingException {
+        return tokensController.generateToken(authUser);
     }
 
     public int verify2FA(String code)

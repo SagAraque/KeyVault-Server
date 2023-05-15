@@ -3,10 +3,8 @@ package com.keyvault.controllers;
 import com.keyvault.Request;
 import com.keyvault.Response;
 import com.keyvault.SecureSocket;
-import com.keyvault.database.models.Devices;
-import com.keyvault.database.models.Items;
-import com.keyvault.database.models.Tokens;
-import com.keyvault.database.models.Users;
+import com.keyvault.database.models.*;
+
 import javax.crypto.*;
 import java.io.*;
 import java.net.Socket;
@@ -14,7 +12,7 @@ import java.security.InvalidKeyException;
 
 
 public class ClientRequestController extends Thread{
-    private String userP, itemP, deviceP;
+    private String userP, itemP, deviceP, redisPassword;
     private AuthController authController;
     private SecureSocket secureSocket;
 
@@ -23,13 +21,14 @@ public class ClientRequestController extends Thread{
         userP = p[0];
         itemP = p[1];
         deviceP = p[2];
+        redisPassword = p[3];
     }
 
     @Override
     public void run(){
         try {
             Request request = (Request) secureSocket.readObject();
-            authController = new AuthController(userP, deviceP);
+            authController = new AuthController(userP, deviceP, redisPassword);
 
             if(request != null)
             {
@@ -71,9 +70,8 @@ public class ClientRequestController extends Thread{
                     //Check if the client can be authenticated by user and device
                     error = authController.authenticate(user, device);
 
-                    if(error == 102)
-                        if(!authController.getAuthUser().isTotpverified())
-                            authController.generateAuthCode();
+                    if(error == 102 && !user.isTotpverified())
+                            authController.generateVerifyToken();
 
                     sendResponse(error, error == 200 ? authController.generateToken() : null);
                 }
@@ -113,12 +111,11 @@ public class ClientRequestController extends Thread{
      * @throws Exception
      */
     private void requestPrivilegeHandler(Request request, Controller controller) throws Exception {
-        Tokens token = request.getToken();
+        SessionToken token = request.getToken();
         Object requestObject = request.getContent();
+        Users user = token.getUser();
 
         if(checkToken(token)){
-            Users user = authController.getAuthUser();
-
             switch (request.getOperationCode()){
                 case "TOTP" -> {
                     int operationStatus = controller.updateUser(authController.controlTOTP());
@@ -155,11 +152,13 @@ public class ClientRequestController extends Thread{
                 }
                 default -> sendResponse(203, null);
             }
+
+            authController.revalidateToken();
         }
 
     }
 
-    private boolean checkToken(Tokens token){
+    private boolean checkToken(SessionToken token){
         boolean auth = authController.checkSessionToken(token);
         if(!auth) sendResponse(201, null);
 
@@ -170,8 +169,6 @@ public class ClientRequestController extends Thread{
         try {
             Response response = new Response(code, objects);
             secureSocket.writeObject(response);
-
-            authController.revalidateToken();
 
         } catch (BadPaddingException | IOException | IllegalBlockSizeException |
                  InvalidKeyException e) {
