@@ -108,14 +108,14 @@ public class ClientRequestController extends Thread{
      * Handles privileged requests, which will need a token provided by the client in the request.
      * @param request Client request
      * @param controller
-     * @throws Exception
      */
-    private void requestPrivilegeHandler(Request request, Controller controller) throws Exception {
+    private void requestPrivilegeHandler(Request request, Controller controller) {
         SessionToken token = request.getToken();
         Object requestObject = request.getContent();
-        Users user = token.getUser();
 
         if(checkToken(token)){
+            Users user = authController.getAuthUser();
+
             switch (request.getOperationCode()){
                 case "TOTP" -> {
                     int operationStatus = controller.updateUser(authController.controlTOTP());

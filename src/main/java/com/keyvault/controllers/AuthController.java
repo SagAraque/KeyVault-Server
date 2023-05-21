@@ -123,7 +123,12 @@ public class AuthController {
        boolean isAuth = tokensController.checkSessionToken(token);
 
        if(isAuth)
+       {
+
            userToken = token;
+           authUser = HibernateUtils.getCurrentSession().get(Users.class, token.getUser().getIdU());
+       }
+
 
        return isAuth;
     }
