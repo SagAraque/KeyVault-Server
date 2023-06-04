@@ -33,6 +33,9 @@ public class Items implements Serializable {
     @Basic
     @Column(name = "salti", nullable = false, length = 88)
     private String saltI;
+    @Basic
+    @Column(name = "color", nullable = false, length = 7)
+    private String color;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idui", referencedColumnName = "idu", nullable = false, insertable = false, updatable = false)
     private Users usersByIdUi;
@@ -97,17 +100,25 @@ public class Items implements Serializable {
         this.saltI = saltI;
     }
 
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Items items = (Items) o;
-        return fav == items.fav && Objects.equals(idI, items.idI) && Objects.equals(idUi, items.idUi) && Objects.equals(name, items.name) && Objects.equals(observations, items.observations) && Objects.equals(modification, items.modification) && Objects.equals(saltI, items.saltI);
+        return fav == items.fav && Objects.equals(idI, items.idI) && Objects.equals(idUi, items.idUi) && Objects.equals(name, items.name) && Objects.equals(observations, items.observations) && Objects.equals(modification, items.modification) && Objects.equals(saltI, items.saltI) && Objects.equals(color, items.color) && Objects.equals(usersByIdUi, items.usersByIdUi) && Objects.equals(notesByIdI, items.notesByIdI) && Objects.equals(passwordsByIdI, items.passwordsByIdI);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(idI, idUi, name, observations, modification, fav, saltI);
+        return Objects.hash(idI, idUi, name, observations, modification, fav, saltI, color, usersByIdUi, notesByIdI, passwordsByIdI);
     }
 
     public Users getUsersByIdUi() {
