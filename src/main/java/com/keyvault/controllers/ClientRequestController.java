@@ -4,8 +4,9 @@ import com.keyvault.Request;
 import com.keyvault.Response;
 import com.keyvault.SecureSocket;
 import com.keyvault.database.models.*;
-
 import javax.crypto.*;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.security.InvalidKeyException;
@@ -130,7 +131,8 @@ public class ClientRequestController extends Thread{
                     sendResponse(200, controller.getUsersDevices(user));
                 }
                 case "INSERT" -> {
-                    sendResponse(controller.createItem((Items) requestObject), null);
+                    int id = controller.createItem((Items) requestObject);
+                    sendResponse(id != -1 ? 200 : 202, id);
                 } //Create item
                 case "MOD" -> {
                     sendResponse(controller.modifyItem((Items) requestObject, user), null);
@@ -149,6 +151,21 @@ public class ClientRequestController extends Thread{
                 }
                 case "VERIFY-TOTP" -> {
                     sendResponse(authController.verify2FA((String) requestObject), null);
+                }
+                case "PROFILE-IMAGE" -> {
+                    try {
+                        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream((byte[]) requestObject);
+                        BufferedImage image = ImageIO.read(byteArrayInputStream);
+
+                        sendResponse(controller.saveImage(image, user ), null);
+                    } catch (IOException e) {
+                        sendResponse(202, null);
+                    }
+                }
+                case "GET-PROFILE-IMAGE" -> {
+                    ByteArrayOutputStream image = controller.getImage(user);
+
+                    sendResponse(image == null ? 202 : 200, image);
                 }
                 default -> sendResponse(203, null);
             }

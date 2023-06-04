@@ -10,6 +10,13 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import javax.crypto.NoSuchPaddingException;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -22,13 +29,52 @@ public class Controller {
     private final PasswordController pc;
     private final String itemsPepper, devicesPepper;
 
-    public Controller(String itemsPepper, String devicesPepper) throws NoSuchPaddingException, NoSuchAlgorithmException {
+    public Controller(String itemsPepper, String devicesPepper) throws NoSuchPaddingException, NoSuchAlgorithmException
+    {
         this.pc = new PasswordController();
         this.itemsPepper = itemsPepper;
         this.devicesPepper = devicesPepper;
     }
 
-    public List<Items> getUserItems(Users user){
+    public int saveImage(BufferedImage bufferedImage, Users user)
+    {
+        try {
+            BufferedImage resized = bufferedImage;
+
+            if(bufferedImage.getHeight() != 60 || bufferedImage.getWidth() != 60)
+            {
+                Image result = bufferedImage.getScaledInstance(60, 60, Image.SCALE_DEFAULT);
+                resized = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
+                resized.getGraphics().drawImage(result, 0, 0, null);
+            }
+
+            File savedImage = new File("src/main/resources/img/" + user.getIdU() + ".png");
+            ImageIO.write(resized, "png", savedImage);
+
+            return 200;
+        } catch (IOException e) {
+            return 202;
+        }
+    }
+
+    public ByteArrayOutputStream getImage(Users user)
+    {
+        try
+        {
+            File image = new File(Controller.class.getResource(user.getIdU() + ".png").toURI());
+            ByteArrayOutputStream imageBytes = new ByteArrayOutputStream();
+            ImageIO.write(ImageIO.read(image), "png", imageBytes);
+
+            return imageBytes;
+        }
+        catch (URISyntaxException | IOException | NullPointerException e)
+        {
+            return null;
+        }
+    }
+
+    public List<Items> getUserItems(Users user)
+    {
         Session session = null;
         List<Items> list = new ArrayList<>();
 
@@ -119,12 +165,13 @@ public class Controller {
             tx.commit();
         }catch (Exception e){
             if(tx != null) tx.rollback();
-            return 202;
+
+            return -1;
         }finally {
             HibernateUtils.closeSession(session);
         }
 
-        return 200;
+        return item.getIdI();
     }
 
     public int modifyItem(Items item, Users user){
