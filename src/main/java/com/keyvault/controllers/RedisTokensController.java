@@ -17,7 +17,8 @@ public class RedisTokensController {
     private Jedis jedis;
     public RedisTokensController(String password)
     {
-        pool = new JedisPool(new JedisPoolConfig(), "129.151.227.217");
+        //pool = new JedisPool(new JedisPoolConfig(), "129.151.227.217");
+        pool = new JedisPool(new JedisPoolConfig(), "localhost");
         jedis = pool.getResource();
         jedis.auth(password);
     }
@@ -57,13 +58,15 @@ public class RedisTokensController {
         return false;
     }
 
-    public void generateVerifyToken(Users user)
+    public String generateVerifyToken(Users user)
     {
         jedis.select(2);
         int authNum = new Random().nextInt(100000, 999999);
 
         jedis.set(String.valueOf(authNum), String.valueOf(user.getIdU()));
         jedis.expire(String.valueOf(authNum), 240);
+
+        return String.valueOf(authNum);
     }
 
     public boolean validateVerifyToken(String authNum, Users user)

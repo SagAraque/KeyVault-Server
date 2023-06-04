@@ -9,7 +9,6 @@ import de.taimos.totp.TOTP;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.hibernate.*;
-
 import javax.crypto.NoSuchPaddingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +22,7 @@ public class AuthController {
     private SessionToken userToken = null;
     private String usersPepper;
     private String devicesPepper;
+    private String plainEmail;
     private RedisTokensController tokensController;
 
     public AuthController(String usersPepper, String devicesPepper, String redisPassword) throws NoSuchPaddingException, NoSuchAlgorithmException {
@@ -38,7 +38,7 @@ public class AuthController {
 
         try {
             session = HibernateUtils.getCurrentSession();
-            Query q = session.createQuery("Select u, d from Devices d inner join d.usersByIdUd u where u.emailU = :email and u.stateU = true and d.ip = :ip and d.mac = :mac and d.stateD = true");
+            Query q = session.createQuery("SELECT u, (SELECT d FROM Devices d WHERE d.usersByIdUd = u AND d.ip = :ip AND d.mac = :mac AND d.stateD = true) FROM Users u WHERE u.emailU = :email AND u.stateU = true");
             q.setParameter("email", pc.hashData(loginUser.getEmailU()));
             q.setParameter("ip", pc.hashData(loginDevice.getIp()));
             q.setParameter("mac", pc.hashData(loginDevice.getMac()));
@@ -54,19 +54,20 @@ public class AuthController {
             if(user == null)
                 return 101;
 
-            if(device == null)
-                return 102;
-
             pc.setToken(usersPepper);
             user.decrypt(pc);
 
             if(pc.hashData(loginUser.getPassU()).equals(user.getPassU()))
             {
-                Transaction tx = session.beginTransaction();
-
                 user.encrypt(pc);
                 authUser = user;
-                String plainEmail = loginUser.getEmailU();
+                plainEmail = loginUser.getEmailU();
+
+                if(device == null)
+                    return 102;
+
+                Transaction tx = session.beginTransaction();
+
                 device.setLastLogin(new Date());
 
                 session.update(device);
@@ -115,7 +116,8 @@ public class AuthController {
 
     public void generateVerifyToken()
     {
-        tokensController.generateVerifyToken(authUser);
+        String code = tokensController.generateVerifyToken(authUser);
+        new MailController(code, plainEmail).start();
     }
 
     public boolean checkSessionToken(SessionToken token)
