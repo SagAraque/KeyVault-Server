@@ -48,7 +48,7 @@ public class Controller {
                 resized.getGraphics().drawImage(result, 0, 0, null);
             }
 
-            File savedImage = new File("src/main/resources/img/" + user.getIdU() + ".png");
+            File savedImage = new File("/home/keyvault/img/" + user.getIdU() + ".png");
             ImageIO.write(resized, "png", savedImage);
 
             return 200;
@@ -61,13 +61,13 @@ public class Controller {
     {
         try
         {
-            File image = new File(Controller.class.getResource(user.getIdU() + ".png").toURI());
+            File image = new File("/home/keyvault/img/" + user.getIdU() + ".png");
             ByteArrayOutputStream imageBytes = new ByteArrayOutputStream();
             ImageIO.write(ImageIO.read(image), "png", imageBytes);
 
             return imageBytes;
         }
-        catch (URISyntaxException | IOException | NullPointerException e)
+        catch (IOException | NullPointerException e)
         {
             return null;
         }

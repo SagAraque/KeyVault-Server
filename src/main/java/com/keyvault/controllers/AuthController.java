@@ -23,13 +23,13 @@ public class AuthController {
     private String usersPepper;
     private String devicesPepper;
     private String plainEmail;
-    private RedisTokensController tokensController;
+    private RedisController tokensController;
 
     public AuthController(String usersPepper, String devicesPepper, String redisPassword) throws NoSuchPaddingException, NoSuchAlgorithmException {
         pc = new PasswordController();
         this.usersPepper = usersPepper;
         this.devicesPepper = devicesPepper;
-        this.tokensController = new RedisTokensController(redisPassword);
+        this.tokensController = new RedisController(redisPassword);
     }
 
     public int authenticate(Users loginUser, Devices loginDevice)

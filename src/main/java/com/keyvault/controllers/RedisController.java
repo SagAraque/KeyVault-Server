@@ -12,10 +12,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class RedisTokensController {
+public class RedisController {
     private JedisPool pool;
     private Jedis jedis;
-    public RedisTokensController(String password)
+    public RedisController(String password)
     {
         //pool = new JedisPool(new JedisPoolConfig(), "129.151.227.217");
         pool = new JedisPool(new JedisPoolConfig(), "localhost");
@@ -79,6 +79,13 @@ public class RedisTokensController {
             return idUser.equals(String.valueOf(user.getIdU()));
 
         return false;
+    }
+
+    public String getConfigValue(String key)
+    {
+        jedis.select(0);
+
+        return jedis.get(key);
     }
 
 }
