@@ -15,15 +15,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 public class AuthController {
     private final PasswordController pc;
     private Users authUser = null;
     private SessionToken userToken = null;
-    private String usersPepper;
-    private String devicesPepper;
+    private final String usersPepper;
+    private final String devicesPepper;
     private String plainEmail;
-    private RedisController tokensController;
+    private final RedisController tokensController;
 
     public AuthController(String usersPepper, String devicesPepper, String redisPassword) throws NoSuchPaddingException, NoSuchAlgorithmException {
         pc = new PasswordController();
@@ -35,6 +36,9 @@ public class AuthController {
     public int authenticate(Users loginUser, Devices loginDevice)
     {
         Session session = null;
+
+        if(!verifyFields(loginUser.getEmailU(), loginUser.getPassU()))
+            return 105;
 
         try {
             session = HibernateUtils.getCurrentSession();
@@ -107,11 +111,11 @@ public class AuthController {
     }
 
     public int validate2FA(String code){
-        if (authUser.isTotpverified()){
+        if (authUser.isTotpverified())
             return validateTOTP(code) ? 200 : 103;
-        }else{
+        else
             return tokensController.validateVerifyToken(code, authUser) ? 200 : 103;
-        }
+
     }
 
     public void generateVerifyToken()
@@ -126,7 +130,6 @@ public class AuthController {
 
        if(isAuth)
        {
-
            userToken = token;
            authUser = HibernateUtils.getCurrentSession().get(Users.class, token.getUser().getIdU());
        }
@@ -190,6 +193,9 @@ public class AuthController {
     }
 
     public int createUser(Users user, Devices device){
+        if(!verifyFields(user.getEmailU(), user.getEmailU()))
+            return 105;
+
         Session session = null;
         Transaction tx = null;
 
@@ -235,5 +241,22 @@ public class AuthController {
         }finally {
             HibernateUtils.closeSession(session);
         }
+    }
+
+    private boolean verifyFields(String username, String password)
+    {
+        Pattern pattern = Pattern.compile("^(?=.*[A-Z])(?=.*[!@#$&*])(?=\\S+$)(?!.*[\\p{So}\\p{Sk}]).{8,}$");
+        Pattern emailPattern = Pattern.compile("^(?!.*[\\p{So}\\p{Sk}])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+
+        if(username.length() == 0 || password.length() == 0 )
+            return false;
+
+        if(!pattern.matcher(password).matches())
+            return false;
+
+        if(!emailPattern.matcher(username).matches())
+            return false;
+
+        return true;
     }
 }
