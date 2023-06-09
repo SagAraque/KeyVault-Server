@@ -58,12 +58,12 @@ public class MailController extends Thread{
                "<body style=\"background-color: #e7e7e7; margin: 0; padding: 20px 0; font-family: Arial, sans-serif\">\n" +
                "<table style=\"width: 100%; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 2px; border-top: 3px solid #2a333f;\">\n" +
                "    <tr>\n" +
-               "        <td style=\"padding: 40px; box-sizing: border-box;\">\n" +
+               "        <td style=\"padding: 40px; box-sizing: border-box; text-align: center\">\n" +
                "            <img src=\"https://raw.githubusercontent.com/SagAraque/KeyVault-Server/master/src/main/resources/logo.png\" alt=\"KeyVault Logo\">\n" +
                "            <h1 style=\"font-size: 25px; text-align: center;\">Verificación de dispositivo</h1>\n" +
                "            <p style=\"margin-bottom: 0; text-align: center;\">Se detectó un nuevo inicio de sesión en un dispositivo no autorizado.</p>\n" +
                "            <p style=\"margin-bottom: 20px; text-align: center;\">Copie el siguiente código de verificación:</p>\n" +
-               "            <p style=\"font-size: 25px; margin-bottom: 20px; font-weight: bold; text-align: center;\">"+ authCode +"</p>\n" +
+               "            <p style=\"font-size: 25px; margin-bottom: 20px; font-weight: bold; text-align: center;\">" + authCode + "</p>\n" +
                "        </td>\n" +
                "    </tr>\n" +
                "</table>\n" +
