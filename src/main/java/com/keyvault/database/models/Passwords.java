@@ -2,7 +2,6 @@ package com.keyvault.database.models;
 
 import com.keyvault.PasswordController;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-
 import javax.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;

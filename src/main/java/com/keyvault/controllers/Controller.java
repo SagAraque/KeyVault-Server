@@ -16,7 +16,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.util.ArrayList;

@@ -34,11 +34,10 @@ public class ClientRequestController extends Thread{
             if(request != null)
             {
                 if(request.getToken() == null){
-                    if(request.getUser() != null && request.getDevice() != null){
+                    if(request.getUser() != null && request.getDevice() != null)
                         requestHandler(request, new Controller(itemP, deviceP));
-                    }else{
+                    else
                         sendResponse(203, null);
-                    }
                 }else{
                     requestPrivilegeHandler(request, new Controller(itemP, deviceP));
                 }

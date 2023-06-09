@@ -6,7 +6,6 @@ import com.keyvault.database.models.Users;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-
 import javax.crypto.NoSuchPaddingException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
