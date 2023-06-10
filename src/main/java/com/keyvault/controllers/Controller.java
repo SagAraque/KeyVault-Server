@@ -289,7 +289,7 @@ public class Controller {
             session = HibernateUtils.getCurrentSession();
             tx = session.beginTransaction();
 
-            Query q = session.createQuery("UPDATE Devices d set d.stateD = 0 where d.usersByIdUd.idU = :user");
+            Query q = session.createQuery("UPDATE Devices d set d.stateD = false where d.usersByIdUd.idU = :user and d.stateD = true");
             q.setParameter("user", user.getIdU());
             q.executeUpdate();
 
