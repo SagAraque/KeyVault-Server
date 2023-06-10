@@ -70,8 +70,8 @@ public class ClientRequestController extends Thread{
                     //Check if the client can be authenticated by user and device
                     error = authController.authenticate(user, device);
 
-                    if(error == 102 && !user.isTotpverified())
-                            authController.generateVerifyToken();
+                    if (error == 102 && !authController.getAuthUser().isTotpverified())
+                        authController.generateVerifyToken();
 
                     sendResponse(error, error == 200 ? authController.generateToken() : null);
                 }
@@ -119,7 +119,7 @@ public class ClientRequestController extends Thread{
             switch (request.getOperationCode()){
                 case "TOTP" -> {
                     int operationStatus = controller.updateUser(authController.controlTOTP());
-                    boolean needQR = !user.isTotpverified() && !user.getKey2Fa().equals("");
+                    boolean needQR = !user.isTotpverified() && user.getKey2Fa() != null;
 
                     sendResponse(operationStatus, needQR ? authController.getQR() : null);
                 }// Manage TOTP

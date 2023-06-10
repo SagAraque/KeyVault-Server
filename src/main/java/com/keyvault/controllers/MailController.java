@@ -27,7 +27,6 @@ public class MailController extends Thread{
     private void sendAuthMail() throws UnsupportedEncodingException, MessagingException {
         Properties prop = new Properties();
         prop.put("mail.smtp.host", "213.37.28.35");
-        //prop.put("mail.smtp.port", "587");
         prop.put("mail.smtp.socketFactory.port", "587");
         prop.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         prop.put("mail.smtp.ssl.protocols", "TLSv1.2");

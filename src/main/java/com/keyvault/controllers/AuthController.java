@@ -101,7 +101,7 @@ public class AuthController {
         try {
             byte[] bytes = new Base32().decode(authUser.getKey2Fa());
             String hexKey = Hex.encodeHexString(bytes);
-            Thread.sleep(2000);
+            Thread.sleep(1000);
 
 
             return TOTP.validate(hexKey, code);
@@ -193,7 +193,7 @@ public class AuthController {
     }
 
     public int createUser(Users user, Devices device){
-        if(!verifyFields(user.getEmailU(), user.getEmailU()))
+        if(!verifyFields(user.getEmailU(), user.getPassU()))
             return 105;
 
         Session session = null;
