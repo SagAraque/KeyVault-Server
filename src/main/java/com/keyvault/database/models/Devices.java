@@ -137,17 +137,20 @@ public class Devices implements Serializable {
         agent = p.decrypt(agent, saltD);
     }
 
-    public void geolocate() throws IOException {
+    public void geolocate() {
         IPGeolocationAPI api = new IPGeolocationAPI("b7e33bf7bf34483f9713c281f889d985");
         GeolocationParams geoParams = new GeolocationParams();
 
-        geoParams.setIPAddress(this.ip.startsWith("127.0.") ? "213.37.28.35" : this.ip);
-        geoParams.setFields("geo");
-        Geolocation geolocation = api.getGeolocation(geoParams);
-
-        if(geolocation.getStatus() == 200)
+        if(this.ip.startsWith("127.0."))
         {
-            this.location = geolocation.getCity() + ", " + geolocation.getCountryName();
+            geoParams.setIPAddress(this.ip.startsWith("127.0.") ? "213.37.28.35" : this.ip);
+            geoParams.setFields("geo");
+            Geolocation geolocation = api.getGeolocation(geoParams);
+
+            if(geolocation.getStatus() == 200)
+                this.location = geolocation.getCity() + ", " + geolocation.getCountryName();
+            else
+                this.location = "No location";
         }
         else
         {
