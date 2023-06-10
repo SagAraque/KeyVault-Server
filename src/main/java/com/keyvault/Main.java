@@ -5,6 +5,7 @@ import com.keyvault.controllers.ClientRequestController;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Properties;
 
 public class Main {
@@ -13,11 +14,13 @@ public class Main {
         try {
             getPeppers(args[0]);
             ServerSocket server = new ServerSocket(5556);
-            ClientRequestController c;
+            ClientRequestController clientRequestController;
 
             while(true) {
-                c = new ClientRequestController(server.accept(), peppers);
-                c.start();
+                Socket clientSocket = server.accept();
+                clientSocket.setSoTimeout(10000);
+                clientRequestController = new ClientRequestController(clientSocket, peppers);
+                clientRequestController.start();
             }
 
         }catch (Exception e){
