@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class Controller {
@@ -76,6 +79,7 @@ public class Controller {
     {
         Session session = null;
         List<Items> list = new ArrayList<>();
+        ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
         try
         {
@@ -88,16 +92,20 @@ public class Controller {
 
             pc.setToken(itemsPepper);
 
-            list.parallelStream().forEach(item -> {
-                item.setUsersByIdUi(null);
+            list.forEach(item -> {
+                executorService.submit(() -> {
+                    item.setUsersByIdUi(null);
 
-                try {
-                    item.decrypt(pc);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                    try {
+                        item.decrypt(pc);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
             });
 
+            executorService.shutdown();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         }
         catch (Exception ignored)
         {
@@ -114,6 +122,7 @@ public class Controller {
     public List<Devices> getUsersDevices(Users user) {
         Session session = null;
         List<Devices> list = new ArrayList<>();
+        ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
         try
         {
@@ -126,13 +135,19 @@ public class Controller {
 
             pc.setToken(devicesPepper);
 
-            list.parallelStream().forEach(device -> {
-                try {
-                    device.decrypt(pc);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+            list.forEach(device -> {
+                executorService.submit(() -> {
+                    try {
+                        device.decrypt(pc);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             });
+
+            executorService.shutdown();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
         }
         catch (Exception ignored)
         {
