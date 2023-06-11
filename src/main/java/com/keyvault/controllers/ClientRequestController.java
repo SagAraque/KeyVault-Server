@@ -11,7 +11,6 @@ import java.io.*;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 
-
 public class ClientRequestController extends Thread{
     private String userP, itemP, deviceP, redisPassword;
     private AuthController authController;
